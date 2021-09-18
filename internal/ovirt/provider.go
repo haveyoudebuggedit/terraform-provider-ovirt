@@ -21,55 +21,60 @@ var providerSchema = map[string]*schema.Schema{
 	"username": {
 		Type:        schema.TypeString,
 		Optional:    true,
-		Description: "Username and realm for oVirt authentication",
+		Description: "Username and realm for oVirt authentication. Required when mock = false.",
 	},
 	"password": {
 		Type:        schema.TypeString,
 		Optional:    true,
 		Sensitive:   true,
-		Description: "Password for oVirt authentication",
+		Description: "Password for oVirt authentication. Required when mock = false.",
 	},
 	"url": {
 		Type:        schema.TypeString,
 		Optional:    true,
-		Description: "URL for the oVirt engine",
+		Description: "URL for the oVirt engine. Required when mock = false.",
 	},
 	"extra_headers": {
 		Type:        schema.TypeMap,
 		Optional:    true,
 		Elem:        schema.TypeString,
-		Description: "Additional HTTP headers to set on each API call",
+		Description: "Additional HTTP headers to set on each API call.",
 	},
 	"tls_insecure": {
 		Type:             schema.TypeBool,
 		Optional:         true,
 		ValidateDiagFunc: validateTLSInsecure,
+		Description:      "Disable certificate verification when connecting the Engine. This is not recommended. Setting this option is incompatible with other tls_ options.",
 	},
 	"tls_system": {
 		Type:             schema.TypeBool,
 		Optional:         true,
 		ValidateDiagFunc: validateTLSSystem,
+		Description:      "Use the system certificate pool to verify the Engine certificate. This does not work on Windows. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
 	},
 	"tls_ca_bundle": {
 		Type:             schema.TypeString,
 		Optional:         true,
 		ValidateDiagFunc: validateFilesExist,
+		Description:      "Validate the Engine certificate against the provided CA certificates. The certificate chain passed should be in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
 	},
 	"tls_ca_files": {
 		Type:        schema.TypeList,
 		Elem:        &schema.Schema{Type: schema.TypeString},
 		Optional:    true,
+		Description: "Validate the Engine certificate against the CA certificates provided in the files in this parameter. The files should contain certificates in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
 	},
 	"tls_ca_dirs": {
 		Type:        schema.TypeList,
 		Elem:        &schema.Schema{Type: schema.TypeString},
 		Optional:    true,
+		Description: "Validate the engine certificate against the CA certificates provided in the specified directories. The directory should contain only files with certificates in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
 	},
 	"mock": {
 		Type:        schema.TypeBool,
 		Optional:    true,
-		Description: "When set to true, the Terraform provider runs against an internal simulation. This should only be used for testing when an oVirt engine is not available",
 		Default:     false,
+		Description: "When set to true, the Terraform provider runs against an internal simulation. This should only be used for testing when an oVirt engine is not available as the mock backend does not persist state across runs. When set to false, one of the tls_ options is required.",
 	},
 }
 
@@ -117,7 +122,7 @@ func (p *provider) provider() *schema.Provider {
 
 func (p *provider) providerFactories() map[string]func() (*schema.Provider, error) {
 	return map[string]func() (*schema.Provider, error){
-		"ovirt": func() (*schema.Provider, error) {
+		"ovirt": func() (*schema.Provider, error) { //nolint:unparam
 			return p.provider(), nil
 		},
 	}
@@ -217,7 +222,7 @@ func (p *provider) configureProvider(ctx context.Context, data *schema.ResourceD
 }
 
 // vmResourceUpdate takes the VM object and converts it into Terraform resource data.
-func vmResourceUpdate(vm ovirtclient.VM, data *schema.ResourceData) diag.Diagnostics {
+func vmResourceUpdate(vm ovirtclient.VMData, data *schema.ResourceData) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	data.SetId(vm.ID())
 	if err := data.Set("cluster_id", vm.ClusterID()); err != nil {
@@ -273,6 +278,54 @@ func (p *provider) vmDelete(ctx context.Context, data *schema.ResourceData, _ in
 	return nil
 }
 
+func (p *provider) vmUpdate(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	params := ovirtclient.UpdateVMParams()
+	if name, ok := data.GetOk("name"); ok {
+		_, err := params.WithName(name.(string))
+		if err != nil {
+			diags = append(
+				diags,
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "Invalid VM name",
+					Detail:   err.Error(),
+				},
+			)
+		}
+	}
+	if name, ok := data.GetOk("comment"); ok {
+		_, err := params.WithComment(name.(string))
+		if err != nil {
+			diags = append(
+				diags,
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "Invalid VM comment",
+					Detail:   err.Error(),
+				},
+			)
+		}
+	}
+	if len(diags) > 0 {
+		return diags
+	}
+
+	vm, err := p.client.UpdateVM(data.Id(), params, ovirtclient.ContextStrategy(ctx))
+	if err != nil {
+		diags = append(
+			diags,
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Failed to update VM %s", data.Id()),
+				Detail:   err.Error(),
+			},
+		)
+		return diags
+	}
+	return vmResourceUpdate(vm, data)
+}
+
 func extractString(data *schema.ResourceData, option string, diags diag.Diagnostics) (string, diag.Diagnostics) {
 	var url string
 	urlInterface, ok := data.GetOk("url")
@@ -312,7 +365,7 @@ func validateTLSSystem(value interface{}, path cty.Path) diag.Diagnostics {
 		}
 	}
 
-	if v == true && runtime.GOOS == "windows" {
+	if v && runtime.GOOS == "windows" {
 		return diag.Diagnostics{
 			{
 				Severity:      diag.Error,

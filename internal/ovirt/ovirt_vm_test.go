@@ -22,14 +22,15 @@ func TestVMResource(t *testing.T) {
 			{
 				Config: fmt.Sprintf(
 					`
-					provider "ovirt" {
-						mock = true
-					}
-					
-					resource "ovirt_vm" "foo" {
-						cluster_id = "%s"
-						template_id = "%s"
-					}`,
+provider "ovirt" {
+	mock = true
+}
+
+resource "ovirt_vm" "foo" {
+	cluster_id = "%s"
+	template_id = "%s"
+}
+`,
 					clusterID,
 					templateID,
 				),
@@ -51,12 +52,11 @@ func TestVMResource(t *testing.T) {
 }
 
 type testVM struct {
-	id string
-	name string
-	comment string
-	clusterID string
+	id         string
+	name       string
+	comment    string
+	clusterID  string
 	templateID string
-
 }
 
 func (t *testVM) ID() string {
@@ -128,10 +128,10 @@ func (t *testVM) DetachDisk(diskAttachmentID string, retries ...ovirtclient.Retr
 
 func TestVMResourceUpdate(t *testing.T) {
 	vm := &testVM{
-		id: "asdf",
-		name: "test VM",
-		comment: "This is a test VM.",
-		clusterID: "cluster-1",
+		id:         "asdf",
+		name:       "test VM",
+		comment:    "This is a test VM.",
+		clusterID:  "cluster-1",
 		templateID: "template-1",
 	}
 	resourceData := schema.TestResourceDataRaw(t, vmSchema, map[string]interface{}{})
