@@ -2,8 +2,10 @@ package ovirt
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"runtime"
 
 	"github.com/hashicorp/go-cty/cty"
@@ -12,6 +14,30 @@ import (
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
+
+var uuidRegexp = regexp.MustCompile(`^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$`)
+
+func validateUUID(i interface{}, path cty.Path) diag.Diagnostics {
+	val, ok := i.(string)
+	if !ok {
+		return diag.Diagnostics{diag.Diagnostic{
+			Severity:      diag.Error,
+			Summary:       "Not a string",
+			Detail:        "The specified value is not a string, but must be a string containing a UUID.",
+			AttributePath: path,
+		}}
+	}
+
+	if !uuidRegexp.MatchString(val) {
+		return diag.Diagnostics{diag.Diagnostic{
+			Severity:      diag.Error,
+			Summary:       "Not a UUID",
+			Detail:        "The specified value is not a UUID.",
+			AttributePath: path,
+		}}
+	}
+	return nil
+}
 
 func init() {
 	schema.DescriptionKind = schema.StringMarkdown
@@ -114,7 +140,9 @@ func (p *provider) provider() *schema.Provider {
 		Schema:               providerSchema,
 		ConfigureContextFunc: p.configureProvider,
 		ResourcesMap: map[string]*schema.Resource{
-			"ovirt_vm": p.vmResource(),
+			"ovirt_vm":              p.vmResource(),
+			"ovirt_disk":            p.diskResource(),
+			"ovirt_disk_attachment": p.diskAttachmentResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{},
 	}
@@ -225,47 +253,20 @@ func (p *provider) configureProvider(ctx context.Context, data *schema.ResourceD
 func vmResourceUpdate(vm ovirtclient.VMData, data *schema.ResourceData) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	data.SetId(vm.ID())
-	if err := data.Set("cluster_id", vm.ClusterID()); err != nil {
-		diags = append(
-			diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Failed to update cluster_id field",
-				Detail:   err.Error(),
-			},
-		)
-	}
-	if err := data.Set("template_id", vm.TemplateID()); err != nil {
-		diags = append(
-			diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Failed to update template_id field",
-				Detail:   err.Error(),
-			},
-		)
-	}
-	if err := data.Set("name", vm.Name()); err != nil {
-		diags = append(
-			diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Failed to update name field",
-				Detail:   err.Error(),
-			},
-		)
-	}
-	if err := data.Set("comment", vm.Comment()); err != nil {
-		diags = append(
-			diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Failed to update comment field",
-				Detail:   err.Error(),
-			},
-		)
-	}
+	diags = setResourceField(data, "cluster_id", vm.ClusterID(), diags)
+	diags = setResourceField(data, "template_id", vm.TemplateID(), diags)
+	diags = setResourceField(data, "name", vm.Name(), diags)
+	diags = setResourceField(data, "comment", vm.Comment(), diags)
+	diags = setResourceField(data, "status", vm.Status(), diags)
 	return diags
 }
 
 func (p *provider) vmDelete(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
 	if err := p.client.RemoveVM(data.Id(), ovirtclient.ContextStrategy(ctx)); err != nil {
+		if isNotFound(err) {
+			data.SetId("")
+			return nil
+		}
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity:      diag.Error,
@@ -275,6 +276,7 @@ func (p *provider) vmDelete(ctx context.Context, data *schema.ResourceData, _ in
 			},
 		}
 	}
+	data.SetId("")
 	return nil
 }
 
@@ -485,4 +487,28 @@ func validateDirsExist(value interface{}, path cty.Path) diag.Diagnostics {
 	}
 
 	return nil
+}
+
+func setResourceField(data *schema.ResourceData, field string, value interface{}, diags diag.Diagnostics) diag.Diagnostics {
+	if err := data.Set(field, value); err != nil {
+		diags = append(
+			diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Failed to update %s field", field),
+				Detail:   err.Error(),
+			},
+		)
+	}
+	return diags
+}
+
+func isNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	var e ovirtclient.EngineError
+	if errors.As(err, &e) {
+		return e.HasCode(ovirtclient.ENotFound)
+	}
+	return false
 }

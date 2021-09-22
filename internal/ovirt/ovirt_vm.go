@@ -11,31 +11,36 @@ import (
 
 var vmSchema = map[string]*schema.Schema{
 	"id": {
-		Type:     schema.TypeString,
-		Computed: true,
+		Type:        schema.TypeString,
+		Computed:    true,
 		Description: "oVirt ID of this VM",
 	},
 	"name": {
-		Type:     schema.TypeString,
-		Optional: true,
+		Type:        schema.TypeString,
+		Optional:    true,
 		Description: "User-provided name for the VM. Must only consist of lower- and uppercase letters, numbers, dash, underscore and dot.",
 	},
 	"comment": {
-		Type:     schema.TypeString,
-		Optional: true,
+		Type:        schema.TypeString,
+		Optional:    true,
 		Description: "User-provided comment for the VM.",
 	},
 	"cluster_id": {
-		Type:     schema.TypeString,
-		Required: true,
-		ForceNew: true,
+		Type:        schema.TypeString,
+		Required:    true,
+		ForceNew:    true,
 		Description: "Cluster to create this VM on.",
 	},
 	"template_id": {
-		Type:     schema.TypeString,
-		Required: true,
-		ForceNew: true,
+		Type:        schema.TypeString,
+		Required:    true,
+		ForceNew:    true,
 		Description: "Base template for this VM.",
+	},
+	"status": {
+		Type:        schema.TypeString,
+		Computed:    true,
+		Description: "Status of the virtual machine",
 	},
 }
 
@@ -106,6 +111,10 @@ func (p *provider) vmRead(
 	id := data.Get("id").(string)
 	vm, err := p.client.GetVM(id, ovirtclient.ContextStrategy(ctx))
 	if err != nil {
+		if isNotFound(err) {
+			data.SetId("")
+			return nil
+		}
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity: diag.Error,

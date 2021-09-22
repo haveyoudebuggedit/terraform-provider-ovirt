@@ -57,6 +57,7 @@ type testVM struct {
 	comment    string
 	clusterID  string
 	templateID string
+	status     ovirtclient.VMStatus
 }
 
 func (t *testVM) ID() string {
@@ -80,50 +81,7 @@ func (t *testVM) TemplateID() string {
 }
 
 func (t *testVM) Status() ovirtclient.VMStatus {
-	panic("implement me")
-}
-
-func (t *testVM) Remove(retries ...ovirtclient.RetryStrategy) error {
-	panic("not implemented")
-}
-
-func (t *testVM) CreateNIC(name string, vnicProfileID string, retries ...ovirtclient.RetryStrategy) (
-	ovirtclient.NIC,
-	error,
-) {
-	panic("not implemented")
-}
-
-func (t *testVM) GetNIC(id string, retries ...ovirtclient.RetryStrategy) (ovirtclient.NIC, error) {
-	panic("not implemented")
-}
-
-func (t *testVM) ListNICs(retries ...ovirtclient.RetryStrategy) ([]ovirtclient.NIC, error) {
-	panic("not implemented")
-}
-
-func (t *testVM) AttachDisk(
-	diskID string,
-	diskInterface ovirtclient.DiskInterface,
-	params ovirtclient.CreateDiskAttachmentOptionalParams,
-	retries ...ovirtclient.RetryStrategy,
-) (ovirtclient.DiskAttachment, error) {
-	panic("not implemented")
-}
-
-func (t *testVM) GetDiskAttachment(
-	diskAttachmentID string,
-	retries ...ovirtclient.RetryStrategy,
-) (ovirtclient.DiskAttachment, error) {
-	panic("not implemented")
-}
-
-func (t *testVM) ListDiskAttachments(retries ...ovirtclient.RetryStrategy) ([]ovirtclient.DiskAttachment, error) {
-	panic("not implemented")
-}
-
-func (t *testVM) DetachDisk(diskAttachmentID string, retries ...ovirtclient.RetryStrategy) error {
-	panic("not implemented")
+	return t.status
 }
 
 func TestVMResourceUpdate(t *testing.T) {
@@ -133,6 +91,7 @@ func TestVMResourceUpdate(t *testing.T) {
 		comment:    "This is a test VM.",
 		clusterID:  "cluster-1",
 		templateID: "template-1",
+		status:     ovirtclient.VMStatusUp,
 	}
 	resourceData := schema.TestResourceDataRaw(t, vmSchema, map[string]interface{}{})
 	diags := vmResourceUpdate(vm, resourceData)
@@ -143,6 +102,7 @@ func TestVMResourceUpdate(t *testing.T) {
 	compareResource(t, resourceData, "name", vm.name)
 	compareResource(t, resourceData, "cluster_id", vm.clusterID)
 	compareResource(t, resourceData, "template_id", vm.templateID)
+	compareResource(t, resourceData, "status", string(vm.status))
 }
 
 func compareResource(t *testing.T, data *schema.ResourceData, field string, value string) {
