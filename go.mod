@@ -1,4 +1,4 @@
-module github.com/ovirt/terraform-provider-ovirt-ng
+module github.com/haveyoudebuggedit/terraform-provider-ovirt
 
 go 1.17
 

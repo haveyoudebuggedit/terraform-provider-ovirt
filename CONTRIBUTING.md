@@ -1,4 +1,4 @@
-# Contributing to terraform-provider-ovirt-ng
+# Contributing to terraform-provider-ovirt
 
 Hi and thank you for wanting to contribute to this Terraform provider! This guide will take you through the most important steps of writing code for this library and getting it merged.
 

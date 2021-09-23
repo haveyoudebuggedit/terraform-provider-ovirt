@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	"github.com/ovirt/terraform-provider-ovirt-ng/internal/ovirt"
+	"github.com/haveyoudebuggedit/terraform-provider-ovirt/internal/ovirt"
 )
 
 func main() {
