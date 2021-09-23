@@ -109,8 +109,8 @@ func (p *provider) diskAttachmentCreate(
 }
 
 func (p *provider) diskAttachmentRead(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
-	vmId := data.Get("vm_id").(string)
-	attachment, err := p.client.GetDiskAttachment(vmId, data.Id(), ovirtclient.ContextStrategy(ctx))
+	vmID := data.Get("vm_id").(string)
+	attachment, err := p.client.GetDiskAttachment(vmID, data.Id(), ovirtclient.ContextStrategy(ctx))
 	if isNotFound(err) {
 		data.SetId("")
 		return nil
@@ -123,8 +123,8 @@ func (p *provider) diskAttachmentDelete(
 	data *schema.ResourceData,
 	_ interface{},
 ) diag.Diagnostics {
-	vmId := data.Get("vm_id").(string)
-	if err := p.client.RemoveDiskAttachment(vmId, data.Id(), ovirtclient.ContextStrategy(ctx)); err != nil {
+	vmID := data.Get("vm_id").(string)
+	if err := p.client.RemoveDiskAttachment(vmID, data.Id(), ovirtclient.ContextStrategy(ctx)); err != nil {
 		if isNotFound(err) {
 			data.SetId("")
 			return nil

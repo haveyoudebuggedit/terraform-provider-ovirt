@@ -12,6 +12,8 @@ import (
 )
 
 func TestDiskAttachmentResource(t *testing.T) {
+	t.Parallel()
+
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
 	storageDomainID := p.getTestHelper().GetStorageDomainID()
 	clusterID := p.getTestHelper().GetClusterID()
@@ -65,6 +67,8 @@ resource "ovirt_disk_attachment" "test" {
 }
 
 func TestDiskAttachmentResourceImport(t *testing.T) {
+	t.Parallel()
+
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
 	storageDomainID := p.getTestHelper().GetStorageDomainID()
 	clusterID := p.getTestHelper().GetClusterID()
@@ -127,7 +131,7 @@ resource "ovirt_disk_attachment" "test" {
 							nil,
 						)
 						if err != nil {
-							return "", fmt.Errorf("failed to create test disk attachment (%v)", err)
+							return "", fmt.Errorf("failed to create test disk attachment (%w)", err)
 						}
 						return fmt.Sprintf("%s/%s", vmID, diskAttachment.ID()), nil
 					},

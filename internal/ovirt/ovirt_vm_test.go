@@ -13,6 +13,8 @@ import (
 )
 
 func TestVMResource(t *testing.T) {
+	t.Parallel()
+
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
 	clusterID := p.getTestHelper().GetClusterID()
 	templateID := p.getTestHelper().GetBlankTemplateID()
@@ -58,6 +60,8 @@ resource "ovirt_vm" "foo" {
 }
 
 func TestVMResourceImport(t *testing.T) {
+	t.Parallel()
+
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
 	client := p.getTestHelper().GetClient()
 	clusterID := p.getTestHelper().GetClusterID()
@@ -151,6 +155,8 @@ func (t *testVM) Status() ovirtclient.VMStatus {
 }
 
 func TestVMResourceUpdate(t *testing.T) {
+	t.Parallel()
+
 	vm := &testVM{
 		id:         "asdf",
 		name:       "test VM",

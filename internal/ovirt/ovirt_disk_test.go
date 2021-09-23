@@ -12,6 +12,8 @@ import (
 )
 
 func TestDiskResource(t *testing.T) {
+	t.Parallel()
+
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
 	storageDomainID := p.getTestHelper().GetStorageDomainID()
 
@@ -48,6 +50,8 @@ resource "ovirt_disk" "foo" {
 }
 
 func TestDiskResourceImport(t *testing.T) {
+	t.Parallel()
+
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
 	client := p.getTestHelper().GetClient()
 	storageDomainID := p.getTestHelper().GetStorageDomainID()
