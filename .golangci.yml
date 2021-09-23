@@ -4,9 +4,6 @@ linters:
   enable:
     # region General
 
-    # Add depguard to prevent adding additional dependencies. This is a client library, we really don't want
-    # additional dependencies.
-    - depguard
     # Prevent improper nolint directives.
     - nolintlint
 
@@ -74,13 +71,6 @@ linters:
 
     # endregion
 linters-settings:
-  depguard:
-    list-type: whitelist
-    include-go-root: false
-    packages:
-      - github.com/ovirt/go-ovirt
-      - github.com/ovirt/go-ovirt-client-log/v2
-      - github.com/google/uuid
   govet:
     enable-all: true
     check-shadowing: false
