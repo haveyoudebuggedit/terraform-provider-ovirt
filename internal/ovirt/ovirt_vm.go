@@ -200,6 +200,9 @@ func (p *provider) vmUpdate(ctx context.Context, data *schema.ResourceData, _ in
 	}
 
 	vm, err := p.client.UpdateVM(data.Id(), params, ovirtclient.ContextStrategy(ctx))
+	if isNotFound(err) {
+		data.SetId("")
+	}
 	if err != nil {
 		diags = append(
 			diags,
