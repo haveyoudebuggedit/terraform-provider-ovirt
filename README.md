@@ -9,3 +9,7 @@ This brings several advantages:
 - Full documentation
 
 Currently, the provider is only available in source form. Once it is closer to completion it will be published in the Terraform registry.
+
+## Contributing
+
+If you wish to contribute to this Terraform provider please head over to the [contributing guide](CONTRIBUTING.md) for a detailed tutorial on how to write code here.
