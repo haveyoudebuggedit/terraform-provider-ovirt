@@ -38,6 +38,10 @@ provider "ovirt" {
   tls_insecure  = var.tls_insecure
   # Set to true if you want to run an in-memory test. In this mode all other options will be ignored.
   mock          = false
+  # Set extra headers to add to each request.
+  extra_headers = {
+    "X-Custom-Header": "Hello world!"
+  }
 }
 ```
 
