@@ -56,8 +56,11 @@ func (p *provider) vmResource() *schema.Resource {
 		ReadContext:   p.vmRead,
 		UpdateContext: p.vmUpdate,
 		DeleteContext: p.vmDelete,
-		Schema:        vmSchema,
-		Description:   "The ovirt_vm resource creates a virtual machine in oVirt.",
+		Importer: &schema.ResourceImporter{
+			StateContext: p.vmImport,
+		},
+		Schema:      vmSchema,
+		Description: "The ovirt_vm resource creates a virtual machine in oVirt.",
 	}
 }
 
@@ -209,4 +212,21 @@ func (p *provider) vmUpdate(ctx context.Context, data *schema.ResourceData, _ in
 		return diags
 	}
 	return vmResourceUpdate(vm, data)
+}
+
+func (p *provider) vmImport(ctx context.Context, data *schema.ResourceData, _ interface{}) (
+	[]*schema.ResourceData,
+	error,
+) {
+	vm, err := p.client.GetVM(data.Id(), ovirtclient.ContextStrategy(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("failed to import VM %s (%w)", data.Id(), err)
+	}
+	d := vmResourceUpdate(vm, data)
+	if err := diagsToError(d); err != nil {
+		return nil, fmt.Errorf("failed to import VM %s (%w)", data.Id(), err)
+	}
+	return []*schema.ResourceData{
+		data,
+	}, nil
 }
