@@ -37,6 +37,7 @@ resource "ovirt_vm" "test" {
 ### Read-Only
 
 - **id** (String) oVirt ID of this VM
+- **status** (String) Status of the virtual machine
 
 ## Import
 
