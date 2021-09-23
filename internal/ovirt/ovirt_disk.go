@@ -3,6 +3,7 @@ package ovirt
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -16,15 +17,19 @@ var diskSchema = map[string]*schema.Schema{
 		Computed: true,
 	},
 	"storagedomain_id": {
-		Type:        schema.TypeString,
-		Required:    true,
-		Description: "ID of the storage domain to use for disk creation",
-		ForceNew:    true,
-	},
-	"format": {
 		Type:             schema.TypeString,
 		Required:         true,
-		Description:      "Format for the disk. Must be either 'raw' or 'cow'.",
+		Description:      "ID of the storage domain to use for disk creation.",
+		ForceNew:         true,
+		ValidateDiagFunc: validateUUID,
+	},
+	"format": {
+		Type:     schema.TypeString,
+		Required: true,
+		Description: fmt.Sprintf(
+			"Format for the disk. One of: `%s`",
+			strings.Join(ovirtclient.ImageFormatValues().Strings(), "`, `"),
+		),
 		ValidateDiagFunc: validateFormat,
 		ForceNew:         true,
 	},
@@ -36,23 +41,28 @@ var diskSchema = map[string]*schema.Schema{
 		ForceNew:         true,
 	},
 	"alias": {
-		Type:     schema.TypeString,
-		Optional: true,
+		Type:        schema.TypeString,
+		Optional:    true,
+		Description: "Human-readable alias for the disk.",
 	},
 	"sparse": {
-		Type:     schema.TypeBool,
-		Optional: true,
-		ForceNew: true,
+		Type:        schema.TypeBool,
+		Optional:    true,
+		ForceNew:    true,
+		Description: "Use sparse provisioning for disk.",
 	},
 	"total_size": {
 		Type:        schema.TypeInt,
 		Computed:    true,
-		Description: "Size of the actual image size on the disk.",
+		Description: "Size of the actual image size on the disk in bytes.",
 	},
 	"status": {
-		Type:        schema.TypeString,
-		Computed:    true,
-		Description: "Status of the disk. One of 'ok', 'locked', or 'illegal'.",
+		Type:     schema.TypeString,
+		Computed: true,
+		Description: fmt.Sprintf(
+			"Status of the disk. One of: `%s`.",
+			strings.Join(ovirtclient.VMStatusValues().Strings(), "`, `"),
+		),
 	},
 }
 
@@ -62,8 +72,8 @@ func validateDiskSize(i interface{}, path cty.Path) diag.Diagnostics {
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity:      diag.Error,
-				Summary:       "Disk size must be an integer",
-				Detail:        "The provided disk size is not an integer",
+				Summary:       "Disk size must be an integer.",
+				Detail:        "The provided disk size is not an integer.",
 				AttributePath: path,
 			},
 		}
@@ -72,8 +82,8 @@ func validateDiskSize(i interface{}, path cty.Path) diag.Diagnostics {
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity: diag.Error,
-				Summary:  "Disk size must be a positive integer",
-				Detail:   fmt.Sprintf("The provided disk size must be a positive integer, got %d", size),
+				Summary:  "Disk size must be a positive integer.",
+				Detail:   fmt.Sprintf("The provided disk size must be a positive integer, got %d.", size),
 			},
 		}
 	}
@@ -86,7 +96,7 @@ func validateFormat(i interface{}, path cty.Path) diag.Diagnostics {
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity:      diag.Error,
-				Summary:       "Disk format must be a string",
+				Summary:       "Disk format must be a string.",
 				Detail:        "The provided disk format is not a string.",
 				AttributePath: path,
 			},
@@ -97,7 +107,7 @@ func validateFormat(i interface{}, path cty.Path) diag.Diagnostics {
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity:      diag.Error,
-				Summary:       "Invalid disk image format",
+				Summary:       "Invalid disk image format.",
 				Detail:        err.Error(),
 				AttributePath: path,
 			},
@@ -135,7 +145,7 @@ func (p *provider) diskCreate(
 			return diag.Diagnostics{
 				diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  "Invalid alias value",
+					Summary:  "Invalid alias value.",
 					Detail:   err.Error(),
 				},
 			}
@@ -147,7 +157,7 @@ func (p *provider) diskCreate(
 			return diag.Diagnostics{
 				diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  "Invalid sparse value",
+					Summary:  "Invalid sparse value.",
 					Detail:   err.Error(),
 				},
 			}
@@ -162,11 +172,13 @@ func (p *provider) diskCreate(
 		ovirtclient.ContextStrategy(ctx),
 	)
 	if err != nil {
-		return diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failed to create disk",
-			Detail:   err.Error(),
-		}}
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Failed to create disk.",
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	return diskResourceUpdate(disk, data)
@@ -188,11 +200,13 @@ func diskResourceUpdate(disk ovirtclient.Disk, data *schema.ResourceData) diag.D
 func (p *provider) diskRead(ctx context.Context, data *schema.ResourceData, i interface{}) diag.Diagnostics {
 	disk, err := p.client.GetDisk(data.Id(), ovirtclient.ContextStrategy(ctx))
 	if err != nil {
-		return diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failed to fetch disk",
-			Detail:   err.Error(),
-		}}
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Failed to fetch disk.",
+				Detail:   err.Error(),
+			},
+		}
 	}
 	return diskResourceUpdate(disk, data)
 }
@@ -203,20 +217,24 @@ func (p *provider) diskUpdate(ctx context.Context, data *schema.ResourceData, i 
 	if alias, ok := data.GetOk("alias"); ok {
 		params, err = params.WithAlias(alias.(string))
 		if err != nil {
-			return diag.Diagnostics{diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Invalid alias value",
-				Detail:   err.Error(),
-			}}
+			return diag.Diagnostics{
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "Invalid alias value.",
+					Detail:   err.Error(),
+				},
+			}
 		}
 	}
 	disk, err := p.client.UpdateDisk(data.Id(), params, ovirtclient.ContextStrategy(ctx))
 	if err != nil {
-		return diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failed to update disk",
-			Detail:   err.Error(),
-		}}
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Failed to update disk.",
+				Detail:   err.Error(),
+			},
+		}
 	}
 	return diskResourceUpdate(disk, data)
 }
@@ -227,11 +245,13 @@ func (p *provider) diskDelete(ctx context.Context, data *schema.ResourceData, _ 
 			data.SetId("")
 			return nil
 		}
-		return diag.Diagnostics{diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Failed to remove disk",
-			Detail:   err.Error(),
-		}}
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Failed to remove disk.",
+				Detail:   err.Error(),
+			},
+		}
 	}
 	data.SetId("")
 	return nil

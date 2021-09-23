@@ -35,8 +35,8 @@ resource "ovirt_vm" "test" {
 
 ### Read-Only
 
-- **id** (String) oVirt ID of this VM
-- **status** (String) Status of the virtual machine
+- **id** (String) oVirt ID of this VM.
+- **status** (String) Status of the virtual machine. One of: `down`, `image_locked`, `migrating`, `not_responding`, `paused`, `powering_down`, `powering_up`, `reboot_in_progress`, `restoring_state`, `saving_state`, `suspended`, `unassigned`, `unknown`, `up`, `wait_for_launch`.
 
 ## Import
 

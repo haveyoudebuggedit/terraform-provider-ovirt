@@ -2,6 +2,8 @@ package ovirt
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -29,9 +31,12 @@ var diskAttachmentSchema = map[string]*schema.Schema{
 		ValidateDiagFunc: validateUUID,
 	},
 	"disk_interface": {
-		Type:             schema.TypeString,
-		Required:         true,
-		Description:      "Type of interface to use for attaching disk.",
+		Type:     schema.TypeString,
+		Required: true,
+		Description: fmt.Sprintf(
+			"Type of interface to use for attaching disk. One of: `%s`",
+			strings.Join(ovirtclient.DiskInterfaceValues().Strings(), "`, `"),
+		),
 		ForceNew:         true,
 		ValidateDiagFunc: validateDiskInterface,
 	},
@@ -43,8 +48,8 @@ func validateDiskInterface(i interface{}, path cty.Path) diag.Diagnostics {
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity:      diag.Error,
-				Summary:       "The disk_interface should be a string",
-				Detail:        "The provided disk_interface value is not a string",
+				Summary:       "The disk_interface should be a string.",
+				Detail:        "The provided disk_interface value is not a string.",
 				AttributePath: path,
 			},
 		}
@@ -54,7 +59,7 @@ func validateDiskInterface(i interface{}, path cty.Path) diag.Diagnostics {
 		return diag.Diagnostics{
 			diag.Diagnostic{
 				Severity:      diag.Error,
-				Summary:       "Invalid disk_interface value",
+				Summary:       "Invalid disk_interface value.",
 				Detail:        err.Error(),
 				AttributePath: path,
 			},
@@ -92,7 +97,7 @@ func (p *provider) diskAttachmentCreate(
 	if err != nil {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "Failed to create disk attachment",
+			Summary:  "Failed to create disk attachment.",
 			Detail:   err.Error(),
 		}}
 	}
@@ -123,7 +128,7 @@ func (p *provider) diskAttachmentDelete(
 		}
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "Failed to remove disk attachment",
+			Summary:  "Failed to remove disk attachment.",
 			Detail:   err.Error(),
 		}}
 	}

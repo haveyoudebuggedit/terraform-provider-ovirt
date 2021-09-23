@@ -3,6 +3,7 @@ package ovirt
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -13,7 +14,7 @@ var vmSchema = map[string]*schema.Schema{
 	"id": {
 		Type:        schema.TypeString,
 		Computed:    true,
-		Description: "oVirt ID of this VM",
+		Description: "oVirt ID of this VM.",
 	},
 	"name": {
 		Type:        schema.TypeString,
@@ -26,21 +27,26 @@ var vmSchema = map[string]*schema.Schema{
 		Description: "User-provided comment for the VM.",
 	},
 	"cluster_id": {
-		Type:        schema.TypeString,
-		Required:    true,
-		ForceNew:    true,
-		Description: "Cluster to create this VM on.",
+		Type:             schema.TypeString,
+		Required:         true,
+		ForceNew:         true,
+		Description:      "Cluster to create this VM on.",
+		ValidateDiagFunc: validateUUID,
 	},
 	"template_id": {
-		Type:        schema.TypeString,
-		Required:    true,
-		ForceNew:    true,
-		Description: "Base template for this VM.",
+		Type:             schema.TypeString,
+		Required:         true,
+		ForceNew:         true,
+		Description:      "Base template for this VM.",
+		ValidateDiagFunc: validateUUID,
 	},
 	"status": {
-		Type:        schema.TypeString,
-		Computed:    true,
-		Description: "Status of the virtual machine",
+		Type:     schema.TypeString,
+		Computed: true,
+		Description: fmt.Sprintf(
+			"Status of the virtual machine. One of: `%s`.",
+			strings.Join(ovirtclient.VMStatusValues().Strings(), "`, `"),
+		),
 	},
 }
 
@@ -122,6 +128,85 @@ func (p *provider) vmRead(
 				Detail:   err.Error(),
 			},
 		}
+	}
+	return vmResourceUpdate(vm, data)
+}
+
+// vmResourceUpdate takes the VM object and converts it into Terraform resource data.
+func vmResourceUpdate(vm ovirtclient.VMData, data *schema.ResourceData) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	data.SetId(vm.ID())
+	diags = setResourceField(data, "cluster_id", vm.ClusterID(), diags)
+	diags = setResourceField(data, "template_id", vm.TemplateID(), diags)
+	diags = setResourceField(data, "name", vm.Name(), diags)
+	diags = setResourceField(data, "comment", vm.Comment(), diags)
+	diags = setResourceField(data, "status", vm.Status(), diags)
+	return diags
+}
+
+func (p *provider) vmDelete(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
+	if err := p.client.RemoveVM(data.Id(), ovirtclient.ContextStrategy(ctx)); err != nil {
+		if isNotFound(err) {
+			data.SetId("")
+			return nil
+		}
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity:      diag.Error,
+				Summary:       fmt.Sprintf("Failed to remove VM %s", data.Id()),
+				Detail:        err.Error(),
+				AttributePath: nil,
+			},
+		}
+	}
+	data.SetId("")
+	return nil
+}
+
+func (p *provider) vmUpdate(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	params := ovirtclient.UpdateVMParams()
+	if name, ok := data.GetOk("name"); ok {
+		_, err := params.WithName(name.(string))
+		if err != nil {
+			diags = append(
+				diags,
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "Invalid VM name",
+					Detail:   err.Error(),
+				},
+			)
+		}
+	}
+	if name, ok := data.GetOk("comment"); ok {
+		_, err := params.WithComment(name.(string))
+		if err != nil {
+			diags = append(
+				diags,
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "Invalid VM comment",
+					Detail:   err.Error(),
+				},
+			)
+		}
+	}
+	if len(diags) > 0 {
+		return diags
+	}
+
+	vm, err := p.client.UpdateVM(data.Id(), params, ovirtclient.ContextStrategy(ctx))
+	if err != nil {
+		diags = append(
+			diags,
+			diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Failed to update VM %s", data.Id()),
+				Detail:   err.Error(),
+			},
+		)
+		return diags
 	}
 	return vmResourceUpdate(vm, data)
 }

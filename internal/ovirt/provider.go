@@ -2,11 +2,7 @@ package ovirt
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"os"
 	"regexp"
-	"runtime"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -20,21 +16,25 @@ var uuidRegexp = regexp.MustCompile(`^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0
 func validateUUID(i interface{}, path cty.Path) diag.Diagnostics {
 	val, ok := i.(string)
 	if !ok {
-		return diag.Diagnostics{diag.Diagnostic{
-			Severity:      diag.Error,
-			Summary:       "Not a string",
-			Detail:        "The specified value is not a string, but must be a string containing a UUID.",
-			AttributePath: path,
-		}}
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity:      diag.Error,
+				Summary:       "Not a string",
+				Detail:        "The specified value is not a string, but must be a string containing a UUID.",
+				AttributePath: path,
+			},
+		}
 	}
 
 	if !uuidRegexp.MatchString(val) {
-		return diag.Diagnostics{diag.Diagnostic{
-			Severity:      diag.Error,
-			Summary:       "Not a UUID",
-			Detail:        "The specified value is not a UUID.",
-			AttributePath: path,
-		}}
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity:      diag.Error,
+				Summary:       "Not a UUID",
+				Detail:        "The specified value is not a UUID.",
+				AttributePath: path,
+			},
+		}
 	}
 	return nil
 }
@@ -79,22 +79,25 @@ var providerSchema = map[string]*schema.Schema{
 		Description:      "Use the system certificate pool to verify the Engine certificate. This does not work on Windows. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
 	},
 	"tls_ca_bundle": {
-		Type:             schema.TypeString,
-		Optional:         true,
-		ValidateDiagFunc: validateFilesExist,
-		Description:      "Validate the Engine certificate against the provided CA certificates. The certificate chain passed should be in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
+		Type:        schema.TypeString,
+		Optional:    true,
+		Description: "Validate the Engine certificate against the provided CA certificates. The certificate chain passed should be in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
 	},
 	"tls_ca_files": {
 		Type:        schema.TypeList,
 		Elem:        &schema.Schema{Type: schema.TypeString},
 		Optional:    true,
 		Description: "Validate the Engine certificate against the CA certificates provided in the files in this parameter. The files should contain certificates in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
+		// Validating TypeList fields is not yet supported in Terraform.
+		//ValidateDiagFunc: validateFilesExist,
 	},
 	"tls_ca_dirs": {
 		Type:        schema.TypeList,
 		Elem:        &schema.Schema{Type: schema.TypeString},
 		Optional:    true,
 		Description: "Validate the engine certificate against the CA certificates provided in the specified directories. The directory should contain only files with certificates in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
+		// Validating TypeList fields is not yet supported in Terraform.
+		//ValidateDiagFunc: validateDirsExist,
 	},
 	"mock": {
 		Type:        schema.TypeBool,
@@ -247,268 +250,4 @@ func (p *provider) configureProvider(ctx context.Context, data *schema.ResourceD
 	}
 	p.client = client
 	return p, diags
-}
-
-// vmResourceUpdate takes the VM object and converts it into Terraform resource data.
-func vmResourceUpdate(vm ovirtclient.VMData, data *schema.ResourceData) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	data.SetId(vm.ID())
-	diags = setResourceField(data, "cluster_id", vm.ClusterID(), diags)
-	diags = setResourceField(data, "template_id", vm.TemplateID(), diags)
-	diags = setResourceField(data, "name", vm.Name(), diags)
-	diags = setResourceField(data, "comment", vm.Comment(), diags)
-	diags = setResourceField(data, "status", vm.Status(), diags)
-	return diags
-}
-
-func (p *provider) vmDelete(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
-	if err := p.client.RemoveVM(data.Id(), ovirtclient.ContextStrategy(ctx)); err != nil {
-		if isNotFound(err) {
-			data.SetId("")
-			return nil
-		}
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity:      diag.Error,
-				Summary:       fmt.Sprintf("Failed to remove VM %s", data.Id()),
-				Detail:        err.Error(),
-				AttributePath: nil,
-			},
-		}
-	}
-	data.SetId("")
-	return nil
-}
-
-func (p *provider) vmUpdate(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	params := ovirtclient.UpdateVMParams()
-	if name, ok := data.GetOk("name"); ok {
-		_, err := params.WithName(name.(string))
-		if err != nil {
-			diags = append(
-				diags,
-				diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  "Invalid VM name",
-					Detail:   err.Error(),
-				},
-			)
-		}
-	}
-	if name, ok := data.GetOk("comment"); ok {
-		_, err := params.WithComment(name.(string))
-		if err != nil {
-			diags = append(
-				diags,
-				diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  "Invalid VM comment",
-					Detail:   err.Error(),
-				},
-			)
-		}
-	}
-	if len(diags) > 0 {
-		return diags
-	}
-
-	vm, err := p.client.UpdateVM(data.Id(), params, ovirtclient.ContextStrategy(ctx))
-	if err != nil {
-		diags = append(
-			diags,
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Failed to update VM %s", data.Id()),
-				Detail:   err.Error(),
-			},
-		)
-		return diags
-	}
-	return vmResourceUpdate(vm, data)
-}
-
-func extractString(data *schema.ResourceData, option string, diags diag.Diagnostics) (string, diag.Diagnostics) {
-	var url string
-	urlInterface, ok := data.GetOk("url")
-	if !ok {
-		diags = append(
-			diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("The %s option is not set", option),
-				Detail:   fmt.Sprintf("The %s option must be set if mock=false", option),
-			},
-		)
-	} else {
-		url, ok = urlInterface.(string)
-		if !ok {
-			diags = append(
-				diags, diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("The %s option is not a string", option),
-					Detail:   fmt.Sprintf("The %s option must be set and be a string", option),
-				},
-			)
-		}
-	}
-	return url, diags
-}
-
-func validateTLSSystem(value interface{}, path cty.Path) diag.Diagnostics {
-	v, ok := value.(bool)
-	if !ok {
-		return diag.Diagnostics{
-			{
-				Severity:      diag.Error,
-				Summary:       "Passed parameter is not a bool.",
-				Detail:        "The passed parameter for the system cert pool is not a bool.",
-				AttributePath: path,
-			},
-		}
-	}
-
-	if v && runtime.GOOS == "windows" {
-		return diag.Diagnostics{
-			{
-				Severity:      diag.Error,
-				Summary:       "The tls_ca_system option not available on Windows.",
-				Detail:        "The tls_ca_system option is not available on Windows due to Golang bug 16736.",
-				AttributePath: path,
-			},
-		}
-	}
-
-	return nil
-}
-
-func validateTLSInsecure(value interface{}, path cty.Path) diag.Diagnostics {
-	v, ok := value.(bool)
-	if !ok {
-		return diag.Diagnostics{
-			{
-				Severity:      diag.Error,
-				Summary:       "Passed parameter is not a bool.",
-				Detail:        "The passed parameter for the insecure flag is not a bool.",
-				AttributePath: path,
-			},
-		}
-	}
-
-	if v {
-		return diag.Diagnostics{
-			{
-				Severity:      diag.Warning,
-				Summary:       "Insecure connection mode enabled.",
-				Detail:        "The insecure connection mode to oVirt is enabled. This is a very bad idea because Terraform will not validate the certificate of the oVirt engine.",
-				AttributePath: path,
-			},
-		}
-	}
-	return nil
-}
-
-func validateFilesExist(value interface{}, path cty.Path) diag.Diagnostics {
-	files, ok := value.([]string)
-	if !ok {
-		return diag.Diagnostics{
-			{
-				Severity:      diag.Error,
-				Summary:       "Passed parameter is not a string.",
-				Detail:        "The passed parameter for the file name is not a string.",
-				AttributePath: path,
-			},
-		}
-	}
-
-	for _, filename := range files {
-		stat, err := os.Stat(filename)
-		if err != nil {
-			return diag.Diagnostics{
-				{
-					Severity:      diag.Error,
-					Summary:       "File does not exist.",
-					Detail:        fmt.Sprintf("The file %s does not exist (%v)", filename, err),
-					AttributePath: path,
-				},
-			}
-		}
-
-		if stat.IsDir() {
-			return diag.Diagnostics{
-				{
-					Severity:      diag.Error,
-					Summary:       "File is a directory, not a file.",
-					Detail:        fmt.Sprintf("Expected %s to be a file, but is a directory.", filename),
-					AttributePath: path,
-				},
-			}
-		}
-	}
-
-	return nil
-}
-
-func validateDirsExist(value interface{}, path cty.Path) diag.Diagnostics {
-	dirs, ok := value.([]string)
-	if !ok {
-		return diag.Diagnostics{
-			{
-				Severity:      diag.Error,
-				Summary:       "Passed parameter is not a list of string.",
-				Detail:        "The passed parameter for the directories is not a list string.",
-				AttributePath: path,
-			},
-		}
-	}
-
-	for _, dirname := range dirs {
-		stat, err := os.Stat(dirname)
-		if err != nil {
-			return diag.Diagnostics{
-				{
-					Severity:      diag.Error,
-					Summary:       "File does not exist.",
-					Detail:        fmt.Sprintf("The file %s does not exist (%v)", dirname, err),
-					AttributePath: path,
-				},
-			}
-		}
-
-		if !stat.IsDir() {
-			return diag.Diagnostics{
-				{
-					Severity:      diag.Error,
-					Summary:       "File is a file, not a directory.",
-					Detail:        fmt.Sprintf("Expected %s to be a directory, not a file.", dirname),
-					AttributePath: path,
-				},
-			}
-		}
-	}
-
-	return nil
-}
-
-func setResourceField(data *schema.ResourceData, field string, value interface{}, diags diag.Diagnostics) diag.Diagnostics {
-	if err := data.Set(field, value); err != nil {
-		diags = append(
-			diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Failed to update %s field", field),
-				Detail:   err.Error(),
-			},
-		)
-	}
-	return diags
-}
-
-func isNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-	var e ovirtclient.EngineError
-	if errors.As(err, &e) {
-		return e.HasCode(ovirtclient.ENotFound)
-	}
-	return false
 }
