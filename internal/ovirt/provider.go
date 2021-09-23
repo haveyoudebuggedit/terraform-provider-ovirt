@@ -159,7 +159,7 @@ func (p *provider) providerFactories() map[string]func() (*schema.Provider, erro
 	}
 }
 
-func (p *provider) configureProvider(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func (p *provider) configureProvider(_ context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 
 	if mock, ok := data.GetOk("mock"); ok && mock == true {

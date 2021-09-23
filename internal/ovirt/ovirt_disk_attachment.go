@@ -142,7 +142,7 @@ func (p *provider) diskAttachmentDelete(
 func (p *provider) diskAttachmentImport(
 	ctx context.Context,
 	data *schema.ResourceData,
-	i interface{},
+	_ interface{},
 ) ([]*schema.ResourceData, error) {
 	importID := data.Id()
 

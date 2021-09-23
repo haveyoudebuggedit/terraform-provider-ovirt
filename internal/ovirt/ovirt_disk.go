@@ -200,7 +200,7 @@ func diskResourceUpdate(disk ovirtclient.Disk, data *schema.ResourceData) diag.D
 	return diags
 }
 
-func (p *provider) diskRead(ctx context.Context, data *schema.ResourceData, i interface{}) diag.Diagnostics {
+func (p *provider) diskRead(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
 	disk, err := p.client.GetDisk(data.Id(), ovirtclient.ContextStrategy(ctx))
 	if err != nil {
 		return diag.Diagnostics{
@@ -214,7 +214,7 @@ func (p *provider) diskRead(ctx context.Context, data *schema.ResourceData, i in
 	return diskResourceUpdate(disk, data)
 }
 
-func (p *provider) diskUpdate(ctx context.Context, data *schema.ResourceData, i interface{}) diag.Diagnostics {
+func (p *provider) diskUpdate(ctx context.Context, data *schema.ResourceData, _ interface{}) diag.Diagnostics {
 	params := ovirtclient.UpdateDiskParams()
 	var err error
 	if alias, ok := data.GetOk("alias"); ok {
