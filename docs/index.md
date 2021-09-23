@@ -7,7 +7,12 @@ The oVirt-ng provides the ability to interact with the oVirt Engine / RHV Manage
 
 # oVirt-ng provider
 
-The oVirt-ng provider interacts with the oVirt Engine / RHV Manager API.
+The oVirt-ng provider interacts with the oVirt Engine / RHV Manager API. The provider can be initialized in two modes:
+
+1. By setting the `url`, `username`, `password`, and at least one of the `tls_` options.
+2. By setting `mock = true`. In this mode the provider will perform everything in-memory. In this mode the provider
+   will drop all changes from memory once it is finished. This is mainly intended for testing and should not be used
+   in production.
 
 ## Example Usage
 
