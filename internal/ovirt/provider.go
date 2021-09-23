@@ -109,10 +109,10 @@ var providerSchema = map[string]*schema.Schema{
 
 // New returns a new Terraform provider schema for oVirt.
 func New() func() *schema.Provider {
-	return newProvider(ovirtclientlog.NewNOOPLogger()).provider
+	return newProvider(ovirtclientlog.NewNOOPLogger()).getProvider
 }
 
-func newProvider(logger ovirtclientlog.Logger) *provider {
+func newProvider(logger ovirtclientlog.Logger) providerInterface {
 	helper, err := ovirtclient.NewTestHelper(
 		"https://localhost/ovirt-engine/api",
 		"admin@internal",
@@ -133,12 +133,22 @@ func newProvider(logger ovirtclientlog.Logger) *provider {
 	}
 }
 
+type providerInterface interface {
+	getTestHelper() ovirtclient.TestHelper
+	getProvider() *schema.Provider
+	getProviderFactories() map[string]func() (*schema.Provider, error)
+}
+
 type provider struct {
 	testHelper ovirtclient.TestHelper
 	client     ovirtclient.Client
 }
 
-func (p *provider) provider() *schema.Provider {
+func (p *provider) getTestHelper() ovirtclient.TestHelper {
+	return p.testHelper
+}
+
+func (p *provider) getProvider() *schema.Provider {
 	return &schema.Provider{
 		Schema:               providerSchema,
 		ConfigureContextFunc: p.configureProvider,
@@ -151,10 +161,10 @@ func (p *provider) provider() *schema.Provider {
 	}
 }
 
-func (p *provider) providerFactories() map[string]func() (*schema.Provider, error) {
+func (p *provider) getProviderFactories() map[string]func() (*schema.Provider, error) {
 	return map[string]func() (*schema.Provider, error){
 		"ovirt": func() (*schema.Provider, error) { //nolint:unparam
-			return p.provider(), nil
+			return p.getProvider(), nil
 		},
 	}
 }

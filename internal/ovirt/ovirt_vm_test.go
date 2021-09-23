@@ -14,8 +14,8 @@ import (
 
 func TestVMResource(t *testing.T) {
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
-	clusterID := p.testHelper.GetClusterID()
-	templateID := p.testHelper.GetBlankTemplateID()
+	clusterID := p.getTestHelper().GetClusterID()
+	templateID := p.getTestHelper().GetBlankTemplateID()
 	config := fmt.Sprintf(
 		`
 provider "ovirt" {
@@ -32,7 +32,7 @@ resource "ovirt_vm" "foo" {
 	)
 
 	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: p.providerFactories(),
+		ProviderFactories: p.getProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -59,9 +59,9 @@ resource "ovirt_vm" "foo" {
 
 func TestVMResourceImport(t *testing.T) {
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
-	client := p.testHelper.GetClient()
-	clusterID := p.testHelper.GetClusterID()
-	templateID := p.testHelper.GetBlankTemplateID()
+	client := p.getTestHelper().GetClient()
+	clusterID := p.getTestHelper().GetClusterID()
+	templateID := p.getTestHelper().GetBlankTemplateID()
 
 	config := fmt.Sprintf(
 		`
@@ -79,7 +79,7 @@ resource "ovirt_vm" "foo" {
 	)
 
 	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: p.providerFactories(),
+		ProviderFactories: p.getProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config:       config,

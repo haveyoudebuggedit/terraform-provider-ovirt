@@ -13,13 +13,13 @@ import (
 
 func TestDiskAttachmentResource(t *testing.T) {
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
-	storageDomainID := p.testHelper.GetStorageDomainID()
-	clusterID := p.testHelper.GetClusterID()
-	templateID := p.testHelper.GetBlankTemplateID()
+	storageDomainID := p.getTestHelper().GetStorageDomainID()
+	clusterID := p.getTestHelper().GetClusterID()
+	templateID := p.getTestHelper().GetBlankTemplateID()
 
 	resource.UnitTest(
 		t, resource.TestCase{
-			ProviderFactories: p.providerFactories(),
+			ProviderFactories: p.getProviderFactories(),
 			Steps: []resource.TestStep{
 				{
 					Config: fmt.Sprintf(
@@ -66,10 +66,10 @@ resource "ovirt_disk_attachment" "test" {
 
 func TestDiskAttachmentResourceImport(t *testing.T) {
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
-	storageDomainID := p.testHelper.GetStorageDomainID()
-	clusterID := p.testHelper.GetClusterID()
-	templateID := p.testHelper.GetBlankTemplateID()
-	client := p.testHelper.GetClient()
+	storageDomainID := p.getTestHelper().GetStorageDomainID()
+	clusterID := p.getTestHelper().GetClusterID()
+	templateID := p.getTestHelper().GetBlankTemplateID()
+	client := p.getTestHelper().GetClient()
 
 	configPart1 := fmt.Sprintf(
 		`
@@ -107,7 +107,7 @@ resource "ovirt_disk_attachment" "test" {
 
 	resource.UnitTest(
 		t, resource.TestCase{
-			ProviderFactories: p.providerFactories(),
+			ProviderFactories: p.getProviderFactories(),
 			Steps: []resource.TestStep{
 				{
 					Config: configPart1,

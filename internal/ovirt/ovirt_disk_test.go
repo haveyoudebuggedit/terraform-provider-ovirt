@@ -13,10 +13,10 @@ import (
 
 func TestDiskResource(t *testing.T) {
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
-	storageDomainID := p.testHelper.GetStorageDomainID()
+	storageDomainID := p.getTestHelper().GetStorageDomainID()
 
 	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: p.providerFactories(),
+		ProviderFactories: p.getProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(
@@ -49,11 +49,11 @@ resource "ovirt_disk" "foo" {
 
 func TestDiskResourceImport(t *testing.T) {
 	p := newProvider(ovirtclientlog.NewTestLogger(t))
-	client := p.testHelper.GetClient()
-	storageDomainID := p.testHelper.GetStorageDomainID()
+	client := p.getTestHelper().GetClient()
+	storageDomainID := p.getTestHelper().GetStorageDomainID()
 
 	resource.UnitTest(t, resource.TestCase{
-		ProviderFactories: p.providerFactories(),
+		ProviderFactories: p.getProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(
