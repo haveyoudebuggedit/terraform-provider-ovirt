@@ -26,7 +26,7 @@ Remember, once this provider hits 1.0, your change will need to be released in o
 
 ## Creating a resource
 
-*👉 Tip:* Even if you don't want to create a new resource, this section is worth reading through.
+**👉 Tip:** Even if you don't want to create a new resource, this section is worth reading through.
 
 ### Creating a schema
 
