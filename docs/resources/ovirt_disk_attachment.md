@@ -40,7 +40,7 @@ resource "ovirt_disk_attachment" "test" {
 ### Required
 
 - **disk_id** (String) ID of the disk to attach. This disk must either be shared or not yet attached to a different VM.
-- **disk_interface** (String) Type of interface to use for attaching disk. One of: `ide`, `sata`, `spapr_vscsi`, `virtio`, `virtio_scsi`
+- **disk_interface** (String) Type of interface to use for attaching disk. One of: `ide`, `sata`, `spapr_vscsi`, `virtio`, `virtio_scsi`.
 - **vm_id** (String) ID of the VM the disk should be attached to.
 
 ### Read-Only
@@ -52,6 +52,6 @@ resource "ovirt_disk_attachment" "test" {
 Import is supported using the following syntax:
 
 ```shell
-# Import a disk attachment using the ID from the oVirt Engine.
-terraform import ovirt_disk_attachment.test 3b940b57-d3a5-448e-9bb3-0d73b76fbb08
+# Import a disk attachment using the VM ID and disk attachmend ID from the oVirt Engine.
+terraform import ovirt_disk_attachment.test 3b940b57-d3a5-448e-9bb3-0d73b76fbb08/7f7f43a8-7fc9-439e-96a0-2cb1737f9234
 ```

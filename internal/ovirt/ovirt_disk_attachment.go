@@ -34,7 +34,7 @@ var diskAttachmentSchema = map[string]*schema.Schema{
 		Type:     schema.TypeString,
 		Required: true,
 		Description: fmt.Sprintf(
-			"Type of interface to use for attaching disk. One of: `%s`",
+			"Type of interface to use for attaching disk. One of: `%s`.",
 			strings.Join(ovirtclient.DiskInterfaceValues().Strings(), "`, `"),
 		),
 		ForceNew:         true,
@@ -73,8 +73,11 @@ func (p *provider) diskAttachmentResource() *schema.Resource {
 		CreateContext: p.diskAttachmentCreate,
 		ReadContext:   p.diskAttachmentRead,
 		DeleteContext: p.diskAttachmentDelete,
-		Schema:        diskAttachmentSchema,
-		Description:   "The ovirt_disk_attachment resource attaches a single disk to a single VM. For controlling multiple attachments use ovirt_disk_attachments.",
+		Importer: &schema.ResourceImporter{
+			StateContext: p.diskAttachmentImport,
+		},
+		Schema:      diskAttachmentSchema,
+		Description: "The ovirt_disk_attachment resource attaches a single disk to a single VM. For controlling multiple attachments use ovirt_disk_attachments.",
 	}
 }
 
@@ -134,6 +137,40 @@ func (p *provider) diskAttachmentDelete(
 	}
 	data.SetId("")
 	return nil
+}
+
+func (p *provider) diskAttachmentImport(
+	ctx context.Context,
+	data *schema.ResourceData,
+	i interface{},
+) ([]*schema.ResourceData, error) {
+	importID := data.Id()
+
+	parts := strings.SplitN(importID, "/", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf(
+			"invalid import specification, the ID should be specified as: VMID/DiskAttachmentID",
+		)
+	}
+	attachment, err := p.client.GetDiskAttachment(parts[0], parts[1], ovirtclient.ContextStrategy(ctx))
+	if isNotFound(err) {
+		return nil, fmt.Errorf("disk attachment with the specified VMID/ID %s not found (%w)", importID, err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to import disk_attachment %s (%w)", importID, err)
+	}
+
+	data.SetId(attachment.ID())
+	if err := data.Set("vm_id", attachment.VMID()); err != nil {
+		return nil, fmt.Errorf("failed to set vm_id to %s", attachment.VMID())
+	}
+	if err := data.Set("disk_id", attachment.DiskID()); err != nil {
+		return nil, fmt.Errorf("failed to set disk_id to %s", attachment.DiskID())
+	}
+	if err := data.Set("disk_interface", string(attachment.DiskInterface())); err != nil {
+		return nil, fmt.Errorf("failed to set disk_interface to %s", attachment.DiskInterface())
+	}
+	return []*schema.ResourceData{data}, nil
 }
 
 func diskAttachmentResourceUpdate(disk ovirtclient.DiskAttachment, data *schema.ResourceData) diag.Diagnostics {
