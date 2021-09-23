@@ -40,7 +40,7 @@ provider "ovirt" {
   mock          = false
   # Set extra headers to add to each request.
   extra_headers = {
-    "X-Custom-Header": "Hello world!"
+    "X-Custom-Header" = "Hello world!"
   }
 }
 ```

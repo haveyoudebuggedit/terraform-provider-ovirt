@@ -17,9 +17,9 @@ provider "ovirt" {
   # Set this to true to disable certificate verification. This is a terrible idea.
   tls_insecure  = var.tls_insecure
   # Set to true if you want to run an in-memory test. In this mode all other options will be ignored.
-  mock          = false
+  mock          = var.mock
   # Set extra headers to add to each request.
   extra_headers = {
-    "X-Custom-Header": "Hello world!"
+    "X-Custom-Header" = "Hello world!"
   }
 }
