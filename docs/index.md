@@ -1,13 +1,13 @@
 ---
 layout: ""
-page_title: "Provider: oVirt-ng"
+page_title: "Provider: oVirt"
 description: |-
-The oVirt-ng provides the ability to interact with the oVirt Engine / RHV Manager API.
+The oVirt provides the ability to interact with the oVirt Engine / RHV Manager API.
 ---
 
-# oVirt-ng provider
+# oVirt provider
 
-The oVirt-ng provider interacts with the oVirt Engine / RHV Manager API. The provider can be initialized in two modes:
+The oVirt provider interacts with the oVirt Engine / RHV Manager API. The provider can be initialized in two modes:
 
 1. By setting the `url`, `username`, `password`, and at least one of the `tls_` options for the oVirt Engine. This will
    perform all changes on the configured oVirt Engine. (You may provide more than one `tls_` option.)
