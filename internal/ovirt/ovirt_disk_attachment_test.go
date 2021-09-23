@@ -69,6 +69,7 @@ func TestDiskAttachmentResourceImport(t *testing.T) {
 	storageDomainID := p.testHelper.GetStorageDomainID()
 	clusterID := p.testHelper.GetClusterID()
 	templateID := p.testHelper.GetBlankTemplateID()
+	client := p.testHelper.GetClient()
 
 	configPart1 := fmt.Sprintf(
 		`
@@ -119,7 +120,7 @@ resource "ovirt_disk_attachment" "test" {
 						diskID := state.RootModule().Resources["ovirt_disk.test"].Primary.Attributes["id"]
 						vmID := state.RootModule().Resources["ovirt_vm.test"].Primary.Attributes["id"]
 
-						diskAttachment, err := p.client.CreateDiskAttachment(
+						diskAttachment, err := client.CreateDiskAttachment(
 							vmID,
 							diskID,
 							ovirtclient.DiskInterfaceVirtIOSCSI,

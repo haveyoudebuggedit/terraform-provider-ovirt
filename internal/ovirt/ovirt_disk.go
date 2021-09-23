@@ -122,8 +122,11 @@ func (p *provider) diskResource() *schema.Resource {
 		ReadContext:   p.diskRead,
 		UpdateContext: p.diskUpdate,
 		DeleteContext: p.diskDelete,
-		Schema:        diskSchema,
-		Description:   "The ovirt_disk resource creates disks in oVirt.",
+		Importer: &schema.ResourceImporter{
+			StateContext: p.diskImport,
+		},
+		Schema:      diskSchema,
+		Description: "The ovirt_disk resource creates disks in oVirt.",
 	}
 }
 
@@ -255,4 +258,21 @@ func (p *provider) diskDelete(ctx context.Context, data *schema.ResourceData, _ 
 	}
 	data.SetId("")
 	return nil
+}
+
+func (p *provider) diskImport(ctx context.Context, data *schema.ResourceData, _ interface{}) (
+	[]*schema.ResourceData,
+	error,
+) {
+	disk, err := p.client.GetDisk(data.Id(), ovirtclient.ContextStrategy(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("failed to import disk %s (%w)", data.Id(), err)
+	}
+	diags := diskResourceUpdate(disk, data)
+	if err := diagsToError(diags); err != nil {
+		return nil, fmt.Errorf("failed to import disk (%w)", err)
+	}
+	return []*schema.ResourceData{
+		data,
+	}, nil
 }

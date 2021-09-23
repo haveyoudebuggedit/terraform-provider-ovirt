@@ -3,6 +3,7 @@ package ovirt
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -57,4 +58,15 @@ func isNotFound(err error) bool {
 		return e.HasCode(ovirtclient.ENotFound)
 	}
 	return false
+}
+
+func diagsToError(diags diag.Diagnostics) error {
+	if !diags.HasError() {
+		return nil
+	}
+	errs := make([]string, len(diags))
+	for i, d := range diags {
+		errs[i] = fmt.Sprintf("%s (%s)", d.Summary, d.Detail)
+	}
+	return fmt.Errorf("%s", strings.Join(errs, ", "))
 }

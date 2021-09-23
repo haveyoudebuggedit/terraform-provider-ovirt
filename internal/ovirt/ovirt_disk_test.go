@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	ovirtclient "github.com/ovirt/go-ovirt-client"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
 
@@ -38,6 +40,62 @@ resource "ovirt_disk" "foo" {
 						"ovirt_disk.foo",
 						"storagedomain_id",
 						regexp.MustCompile(fmt.Sprintf("^%s$", regexp.QuoteMeta(storageDomainID))),
+					),
+				),
+			},
+		},
+	})
+}
+
+func TestDiskResourceImport(t *testing.T) {
+	p := newProvider(ovirtclientlog.NewTestLogger(t))
+	client := p.testHelper.GetClient()
+	storageDomainID := p.testHelper.GetStorageDomainID()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProviderFactories: p.providerFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(
+					`
+provider "ovirt" {
+	mock = true
+}
+
+resource "ovirt_disk" "foo" {
+	storagedomain_id = "%s"
+	format           = "raw"
+    size             = 512
+    alias            = "test"
+    sparse           = true
+}
+`,
+					storageDomainID,
+				),
+				ResourceName: "ovirt_disk.foo",
+				ImportState:  true,
+				ImportStateIdFunc: func(state *terraform.State) (string, error) {
+					disk, err := client.CreateDisk(
+						storageDomainID,
+						ovirtclient.ImageFormatRaw,
+						512,
+						nil,
+					)
+					if err != nil {
+						return "", fmt.Errorf("failed to create import test disk (%w)", err)
+					}
+					return disk.ID(), nil
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr(
+						"ovirt_disk.foo",
+						"storagedomain_id",
+						regexp.MustCompile(fmt.Sprintf("^%s$", regexp.QuoteMeta(storageDomainID))),
+					),
+					resource.TestMatchResourceAttr(
+						"ovirt_disk.foo",
+						"format",
+						regexp.MustCompile(fmt.Sprintf("^%s$", ovirtclient.ImageFormatRaw)),
 					),
 				),
 			},
