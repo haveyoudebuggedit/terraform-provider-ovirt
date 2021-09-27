@@ -79,7 +79,7 @@ func (p *provider) diskAttachmentResource() *schema.Resource {
 		Schema:      diskAttachmentSchema,
 		Description: `The ovirt_disk_attachment resource attaches a single disk to a single VM. For controlling multiple attachments use ovirt_disk_attachments.
 
-!> Do not use this resource when using ovirt_disk_attachments (plural) with detach_unmanaged=true or remove_unmanaged=true on the same VM as it will cause a ping-pong effect of resources being created and removed on each run.`,
+~> Do not use this resource when using ovirt_disk_attachments (plural) on the same VM as it will cause a ping-pong effect of resources being created and removed on each run.`,
 	}
 }
 
