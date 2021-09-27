@@ -70,3 +70,21 @@ func diagsToError(diags diag.Diagnostics) error {
 	}
 	return fmt.Errorf("%s", strings.Join(errs, ", "))
 }
+
+func errorToDiags(action string, err error) diag.Diagnostics {
+	if err != nil {
+		return diag.Diagnostics{errorToDiag(action, err)}
+	}
+	return nil
+}
+
+func errorToDiag(action string, err error) diag.Diagnostic {
+	if err == nil {
+		panic(fmt.Errorf("errorToDiag received nil error"))
+	}
+	return diag.Diagnostic{
+		Severity: diag.Error,
+		Summary:  fmt.Sprintf("Failed to %s", action),
+		Detail:   err.Error(),
+	}
+}
