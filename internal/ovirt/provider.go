@@ -153,9 +153,10 @@ func (p *provider) getProvider() *schema.Provider {
 		Schema:               providerSchema,
 		ConfigureContextFunc: p.configureProvider,
 		ResourcesMap: map[string]*schema.Resource{
-			"ovirt_vm":              p.vmResource(),
-			"ovirt_disk":            p.diskResource(),
-			"ovirt_disk_attachment": p.diskAttachmentResource(),
+			"ovirt_vm":               p.vmResource(),
+			"ovirt_disk":             p.diskResource(),
+			"ovirt_disk_attachment":  p.diskAttachmentResource(),
+			"ovirt_disk_attachments": p.diskAttachmentsResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{},
 	}
