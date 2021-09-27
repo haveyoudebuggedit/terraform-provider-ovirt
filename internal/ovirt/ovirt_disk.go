@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	ovirtclient "github.com/ovirt/go-ovirt-client"
@@ -64,56 +63,6 @@ var diskSchema = map[string]*schema.Schema{
 			strings.Join(ovirtclient.VMStatusValues().Strings(), "`, `"),
 		),
 	},
-}
-
-func validateDiskSize(i interface{}, path cty.Path) diag.Diagnostics {
-	size, ok := i.(int)
-	if !ok {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity:      diag.Error,
-				Summary:       "Disk size must be an integer.",
-				Detail:        "The provided disk size is not an integer.",
-				AttributePath: path,
-			},
-		}
-	}
-	if size <= 0 {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Disk size must be a positive integer.",
-				Detail:   fmt.Sprintf("The provided disk size must be a positive integer, got %d.", size),
-			},
-		}
-	}
-	return nil
-}
-
-func validateFormat(i interface{}, path cty.Path) diag.Diagnostics {
-	val, ok := i.(string)
-	if !ok {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity:      diag.Error,
-				Summary:       "Disk format must be a string.",
-				Detail:        "The provided disk format is not a string.",
-				AttributePath: path,
-			},
-		}
-	}
-	format := ovirtclient.ImageFormat(val)
-	if err := format.Validate(); err != nil {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity:      diag.Error,
-				Summary:       "Invalid disk image format.",
-				Detail:        err.Error(),
-				AttributePath: path,
-			},
-		}
-	}
-	return nil
 }
 
 func (p *provider) diskResource() *schema.Resource {
