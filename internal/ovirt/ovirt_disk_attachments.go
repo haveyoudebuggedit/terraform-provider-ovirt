@@ -62,9 +62,7 @@ var diskAttachmentsSchema = map[string]*schema.Schema{
 		Default:  false,
 		Description: `Completely remove attached unmanaged disks, not just detach.
 
-!> Do not use this resource when using ovirt_disk_attachment (singular) on the same VM as it will cause a ping-pong effect of resources being created and removed on each run.
-
-!> Use with care! This option will delete all disks attached to the current VM that are not managed, not just detach them!`,
+~> Use with care! This option will delete all disks attached to the current VM that are not managed, not just detach them!`,
 	},
 }
 
@@ -78,7 +76,10 @@ func (p *provider) diskAttachmentsResource() *schema.Resource {
 			StateContext: p.diskAttachmentsImport,
 		},
 		Schema:      diskAttachmentsSchema,
-		Description: `The ovirt_disk_attachments resource attaches multiple disks to a single VM in one operation. It also allows for removing all attachments that are not declared in an attachment block. This is useful for removing attachments that have `,
+		Description: `The ovirt_disk_attachments resource attaches multiple disks to a single VM in one operation. It also allows for removing all attachments that are not declared in an attachment block. This is useful for removing attachments that have been added from the template.
+
+~> Do not use this resource on the same VM as ovirt_disk_attachment (singular). It will cause a ping-pong effect of resources being created and removed on each Terraform run.
+`,
 	}
 }
 

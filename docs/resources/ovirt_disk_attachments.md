@@ -3,12 +3,15 @@
 page_title: "ovirt_disk_attachments Resource - ovirt-terraform-provider-ng"
 subcategory: ""
 description: |-
-  The ovirtdiskattachments resource attaches multiple disks to a single VM in one operation. It also allows for removing all attachments that are not declared in an attachment block. This is useful for removing attachments that have
+  The ovirtdiskattachments resource attaches multiple disks to a single VM in one operation. It also allows for removing all attachments that are not declared in an attachment block. This is useful for removing attachments that have been added from the template.
+  ~> Do not use this resource on the same VM as ovirtdiskattachment (singular). It will cause a ping-pong effect of resources being created and removed on each Terraform run.
 ---
 
 # ovirt_disk_attachments (Resource)
 
-The ovirt_disk_attachments resource attaches multiple disks to a single VM in one operation. It also allows for removing all attachments that are not declared in an attachment block. This is useful for removing attachments that have
+The ovirt_disk_attachments resource attaches multiple disks to a single VM in one operation. It also allows for removing all attachments that are not declared in an attachment block. This is useful for removing attachments that have been added from the template.
+
+~> Do not use this resource on the same VM as ovirt_disk_attachment (singular). It will cause a ping-pong effect of resources being created and removed on each Terraform run.
 
 ## Example Usage
 
@@ -54,9 +57,7 @@ resource "ovirt_disk_attachments" "test" {
 
 - **remove_unmanaged** (Boolean) Completely remove attached unmanaged disks, not just detach.
 
-!> Do not use this resource when using ovirt_disk_attachment (singular) on the same VM as it will cause a ping-pong effect of resources being created and removed on each run.
-
-!> Use with care! This option will delete all disks attached to the current VM that are not managed, not just detach them!
+~> Use with care! This option will delete all disks attached to the current VM that are not managed, not just detach them!
 
 ### Read-Only
 
