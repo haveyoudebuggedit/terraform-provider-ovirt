@@ -157,6 +157,7 @@ func (p *provider) getProvider() *schema.Provider {
 			"ovirt_disk":             p.diskResource(),
 			"ovirt_disk_attachment":  p.diskAttachmentResource(),
 			"ovirt_disk_attachments": p.diskAttachmentsResource(),
+			"ovirt_nic":              p.nicResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{},
 	}

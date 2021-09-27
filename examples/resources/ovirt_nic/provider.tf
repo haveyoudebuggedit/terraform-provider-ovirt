@@ -1,0 +1,3 @@
+provider "ovirt" {
+  mock = true
+}

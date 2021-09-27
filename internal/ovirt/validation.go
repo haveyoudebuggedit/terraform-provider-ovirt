@@ -111,3 +111,28 @@ func validateTLSInsecure(value interface{}, path cty.Path) diag.Diagnostics {
 	}
 	return nil
 }
+
+func validateNonEmpty(value interface{}, path cty.Path) diag.Diagnostics {
+	v, ok := value.(string)
+	if !ok {
+		return diag.Diagnostics{
+			{
+				Severity:      diag.Error,
+				Summary:       "Passed parameter is not a string.",
+				Detail:        "The passed parameter is not a string.",
+				AttributePath: path,
+			},
+		}
+	}
+
+	if v == "" {
+		return diag.Diagnostics{
+			{
+				Severity:      diag.Error,
+				Summary:       "This field must not be empty.",
+				AttributePath: path,
+			},
+		}
+	}
+	return nil
+}
