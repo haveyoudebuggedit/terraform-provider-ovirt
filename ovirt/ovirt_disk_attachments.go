@@ -75,7 +75,7 @@ func (p *provider) diskAttachmentsResource() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: p.diskAttachmentsImport,
 		},
-		Schema:      diskAttachmentsSchema,
+		Schema: diskAttachmentsSchema,
 		Description: `The ovirt_disk_attachments resource attaches multiple disks to a single VM in one operation. It also allows for removing all attachments that are not declared in an attachment block. This is useful for removing attachments that have been added from the template.
 
 ~> Do not use this resource on the same VM as ovirt_disk_attachment (singular). It will cause a ping-pong effect of resources being created and removed on each Terraform run.
