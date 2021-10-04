@@ -36,7 +36,7 @@ Before you even begin writing actual code, you will need to decide on the schema
 package ovirt
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 var diskSchema = map[string]*schema.Schema{

@@ -5,17 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 )
 
 var diskAttachmentsSchema = map[string]*schema.Schema{
-	"id": {
-		Type:        schema.TypeString,
-		Computed:    true,
-		Description: "Meta-identifier for the disk attachments. Will always be the same as the VM ID after apply.",
-	},
 	"attachment": {
 		Type:     schema.TypeSet,
 		Required: true,
@@ -34,7 +29,7 @@ var diskAttachmentsSchema = map[string]*schema.Schema{
 					Required:         true,
 					Description:      "ID of the disk to attach. This disk must either be shared or not yet attached to a different VM.",
 					ForceNew:         false,
-					ValidateDiagFunc: validateUUID,
+					ValidateFunc: validateCompat(validateUUID),
 				},
 				"disk_interface": {
 					Type:     schema.TypeString,
@@ -44,7 +39,7 @@ var diskAttachmentsSchema = map[string]*schema.Schema{
 						strings.Join(ovirtclient.DiskInterfaceValues().Strings(), "`, `"),
 					),
 					ForceNew:         false,
-					ValidateDiagFunc: validateDiskInterface,
+					ValidateFunc: validateCompat(validateDiskInterface),
 				},
 			},
 		},
@@ -54,7 +49,7 @@ var diskAttachmentsSchema = map[string]*schema.Schema{
 		Required:         true,
 		Description:      "ID of the VM the disks should be attached to.",
 		ForceNew:         true,
-		ValidateDiagFunc: validateUUID,
+		ValidateFunc: validateCompat(validateUUID),
 	},
 	"remove_unmanaged": {
 		Type:     schema.TypeBool,
@@ -68,12 +63,12 @@ var diskAttachmentsSchema = map[string]*schema.Schema{
 
 func (p *provider) diskAttachmentsResource() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: p.diskAttachmentsCreateOrUpdate,
-		ReadContext:   p.diskAttachmentsRead,
-		UpdateContext: p.diskAttachmentsCreateOrUpdate,
-		DeleteContext: p.diskAttachmentsDelete,
+		Create: crudCompat(p.diskAttachmentsCreateOrUpdate),
+		Read:   crudCompat(p.diskAttachmentsRead),
+		Update: crudCompat(p.diskAttachmentsCreateOrUpdate),
+		Delete: crudCompat(p.diskAttachmentsDelete),
 		Importer: &schema.ResourceImporter{
-			StateContext: p.diskAttachmentsImport,
+			State: importCompat(p.diskAttachmentsImport),
 		},
 		Schema: diskAttachmentsSchema,
 		Description: `The ovirt_disk_attachments resource attaches multiple disks to a single VM in one operation. It also allows for removing all attachments that are not declared in an attachment block. This is useful for removing attachments that have been added from the template.
