@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	ovirtclient "github.com/ovirt/go-ovirt-client"
@@ -12,11 +12,11 @@ import (
 
 var diskSchema = map[string]*schema.Schema{
 	"storagedomain_id": {
-		Type:             schema.TypeString,
-		Required:         true,
-		Description:      "ID of the storage domain to use for disk creation.",
-		ForceNew:         true,
-		ValidateFunc:     validateCompat(validateUUID),
+		Type:         schema.TypeString,
+		Required:     true,
+		Description:  "ID of the storage domain to use for disk creation.",
+		ForceNew:     true,
+		ValidateFunc: validateCompat(validateUUID),
 	},
 	"format": {
 		Type:     schema.TypeString,
@@ -25,15 +25,15 @@ var diskSchema = map[string]*schema.Schema{
 			"Format for the disk. One of: `%s`",
 			strings.Join(ovirtclient.ImageFormatValues().Strings(), "`, `"),
 		),
-		ValidateFunc:     validateCompat(validateFormat),
-		ForceNew:         true,
+		ValidateFunc: validateCompat(validateFormat),
+		ForceNew:     true,
 	},
 	"size": {
-		Type:             schema.TypeInt,
-		Required:         true,
-		Description:      "Disk size in bytes.",
-		ValidateFunc:     validateCompat(validateDiskSize),
-		ForceNew:         true,
+		Type:         schema.TypeInt,
+		Required:     true,
+		Description:  "Disk size in bytes.",
+		ValidateFunc: validateCompat(validateDiskSize),
+		ForceNew:     true,
 	},
 	"alias": {
 		Type:        schema.TypeString,

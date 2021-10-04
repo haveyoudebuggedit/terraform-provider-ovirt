@@ -12,18 +12,18 @@ import (
 
 var diskAttachmentSchema = map[string]*schema.Schema{
 	"vm_id": {
-		Type:             schema.TypeString,
-		Required:         true,
-		Description:      "ID of the VM the disk should be attached to.",
-		ForceNew:         true,
-		ValidateFunc:     validateCompat(validateUUID),
+		Type:         schema.TypeString,
+		Required:     true,
+		Description:  "ID of the VM the disk should be attached to.",
+		ForceNew:     true,
+		ValidateFunc: validateCompat(validateUUID),
 	},
 	"disk_id": {
-		Type:             schema.TypeString,
-		Required:         true,
-		Description:      "ID of the disk to attach. This disk must either be shared or not yet attached to a different VM.",
-		ForceNew:         true,
-		ValidateFunc:     validateCompat(validateUUID),
+		Type:         schema.TypeString,
+		Required:     true,
+		Description:  "ID of the disk to attach. This disk must either be shared or not yet attached to a different VM.",
+		ForceNew:     true,
+		ValidateFunc: validateCompat(validateUUID),
 	},
 	"disk_interface": {
 		Type:     schema.TypeString,
@@ -32,8 +32,8 @@ var diskAttachmentSchema = map[string]*schema.Schema{
 			"Type of interface to use for attaching disk. One of: `%s`.",
 			strings.Join(ovirtclient.DiskInterfaceValues().Strings(), "`, `"),
 		),
-		ForceNew:         true,
-		ValidateFunc:     validateCompat(validateDiskInterface),
+		ForceNew:     true,
+		ValidateFunc: validateCompat(validateDiskInterface),
 	},
 }
 

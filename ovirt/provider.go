@@ -32,16 +32,16 @@ var providerSchema = map[string]*schema.Schema{
 		Description: "Additional HTTP headers to set on each API call.",
 	},
 	"tls_insecure": {
-		Type:             schema.TypeBool,
-		Optional:         true,
+		Type:         schema.TypeBool,
+		Optional:     true,
 		ValidateFunc: validateCompat(validateTLSInsecure),
-		Description:      "Disable certificate verification when connecting the Engine. This is not recommended. Setting this option is incompatible with other tls_ options.",
+		Description:  "Disable certificate verification when connecting the Engine. This is not recommended. Setting this option is incompatible with other tls_ options.",
 	},
 	"tls_system": {
-		Type:             schema.TypeBool,
-		Optional:         true,
+		Type:         schema.TypeBool,
+		Optional:     true,
 		ValidateFunc: validateCompat(validateTLSSystem),
-		Description:      "Use the system certificate pool to verify the Engine certificate. This does not work on Windows. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
+		Description:  "Use the system certificate pool to verify the Engine certificate. This does not work on Windows. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
 	},
 	"tls_ca_bundle": {
 		Type:        schema.TypeString,
@@ -115,8 +115,8 @@ func (p *provider) getTestHelper() ovirtclient.TestHelper {
 
 func (p *provider) getProvider() terraform.ResourceProvider {
 	return &schema.Provider{
-		Schema:               providerSchema,
-		ConfigureFunc:        p.configureProvider,
+		Schema:        providerSchema,
+		ConfigureFunc: p.configureProvider,
 		ResourcesMap: map[string]*schema.Resource{
 			"ovirt_vm":               p.vmResource(),
 			"ovirt_disk":             p.diskResource(),
@@ -130,7 +130,7 @@ func (p *provider) getProvider() terraform.ResourceProvider {
 
 func (p *provider) getProviderFactories() map[string]terraform.ResourceProviderFactory {
 	return map[string]terraform.ResourceProviderFactory{
-		"ovirt": func() (terraform.ResourceProvider, error) { //nolint:unparam
+		"ovirt": func() (terraform.ResourceProvider, error) {
 			return p.getProvider(), nil
 		},
 	}

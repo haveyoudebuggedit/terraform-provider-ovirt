@@ -12,24 +12,24 @@ import (
 
 var nicSchema = map[string]*schema.Schema{
 	"vnic_profile_id": {
-		Type:             schema.TypeString,
-		Required:         true,
-		Description:      "ID of the VNIC profile to associate with this NIC.",
-		ForceNew:         true,
+		Type:         schema.TypeString,
+		Required:     true,
+		Description:  "ID of the VNIC profile to associate with this NIC.",
+		ForceNew:     true,
 		ValidateFunc: validateCompat(validateUUID),
 	},
 	"vm_id": {
-		Type:             schema.TypeString,
-		Required:         true,
-		Description:      "ID of the VM to attach this NIC to.",
-		ForceNew:         true,
+		Type:         schema.TypeString,
+		Required:     true,
+		Description:  "ID of the VM to attach this NIC to.",
+		ForceNew:     true,
 		ValidateFunc: validateCompat(validateUUID),
 	},
 	"name": {
-		Type:             schema.TypeString,
-		Required:         true,
-		Description:      "Human-readable name for the NIC.",
-		ForceNew:         true,
+		Type:         schema.TypeString,
+		Required:     true,
+		Description:  "Human-readable name for the NIC.",
+		ForceNew:     true,
 		ValidateFunc: validateCompat(validateNonEmpty),
 	},
 }
