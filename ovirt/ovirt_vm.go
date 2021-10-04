@@ -117,7 +117,7 @@ func (p *provider) vmRead(
 	data *schema.ResourceData,
 	_ interface{},
 ) diag.Diagnostics {
-	id := data.Get("id").(string)
+	id := data.Id()
 	vm, err := p.client.GetVM(id, ovirtclient.ContextStrategy(ctx))
 	if err != nil {
 		if isNotFound(err) {
