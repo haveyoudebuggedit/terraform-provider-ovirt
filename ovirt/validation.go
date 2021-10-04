@@ -2,6 +2,7 @@ package ovirt
 
 import (
 	"fmt"
+	"regexp"
 	"runtime"
 
 	"github.com/hashicorp/go-cty/cty"
@@ -130,6 +131,60 @@ func validateNonEmpty(value interface{}, path cty.Path) diag.Diagnostics {
 			{
 				Severity:      diag.Error,
 				Summary:       "This field must not be empty.",
+				AttributePath: path,
+			},
+		}
+	}
+	return nil
+}
+
+func validateDiskInterface(i interface{}, path cty.Path) diag.Diagnostics {
+	val, ok := i.(string)
+	if !ok {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity:      diag.Error,
+				Summary:       "The disk_interface should be a string.",
+				Detail:        "The provided disk_interface value is not a string.",
+				AttributePath: path,
+			},
+		}
+	}
+	interf := ovirtclient.DiskInterface(val)
+	if err := interf.Validate(); err != nil {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity:      diag.Error,
+				Summary:       "Invalid disk_interface value.",
+				Detail:        err.Error(),
+				AttributePath: path,
+			},
+		}
+	}
+	return nil
+}
+
+var uuidRegexp = regexp.MustCompile(`^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$`)
+
+func validateUUID(i interface{}, path cty.Path) diag.Diagnostics {
+	val, ok := i.(string)
+	if !ok {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity:      diag.Error,
+				Summary:       "Not a string",
+				Detail:        "The specified value is not a string, but must be a string containing a UUID.",
+				AttributePath: path,
+			},
+		}
+	}
+
+	if !uuidRegexp.MatchString(val) {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Severity:      diag.Error,
+				Summary:       "Not a UUID",
+				Detail:        "The specified value is not a UUID.",
 				AttributePath: path,
 			},
 		}

@@ -2,42 +2,12 @@ package ovirt
 
 import (
 	"context"
-	"regexp"
 
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	ovirtclient "github.com/ovirt/go-ovirt-client"
 	ovirtclientlog "github.com/ovirt/go-ovirt-client-log/v2"
 )
-
-var uuidRegexp = regexp.MustCompile(`^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$`)
-
-func validateUUID(i interface{}, path cty.Path) diag.Diagnostics {
-	val, ok := i.(string)
-	if !ok {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity:      diag.Error,
-				Summary:       "Not a string",
-				Detail:        "The specified value is not a string, but must be a string containing a UUID.",
-				AttributePath: path,
-			},
-		}
-	}
-
-	if !uuidRegexp.MatchString(val) {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity:      diag.Error,
-				Summary:       "Not a UUID",
-				Detail:        "The specified value is not a UUID.",
-				AttributePath: path,
-			},
-		}
-	}
-	return nil
-}
 
 func init() {
 	schema.DescriptionKind = schema.StringMarkdown

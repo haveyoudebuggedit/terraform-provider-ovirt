@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	ovirtclient "github.com/ovirt/go-ovirt-client"
@@ -40,32 +39,6 @@ var diskAttachmentSchema = map[string]*schema.Schema{
 		ForceNew:         true,
 		ValidateDiagFunc: validateDiskInterface,
 	},
-}
-
-func validateDiskInterface(i interface{}, path cty.Path) diag.Diagnostics {
-	val, ok := i.(string)
-	if !ok {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity:      diag.Error,
-				Summary:       "The disk_interface should be a string.",
-				Detail:        "The provided disk_interface value is not a string.",
-				AttributePath: path,
-			},
-		}
-	}
-	interf := ovirtclient.DiskInterface(val)
-	if err := interf.Validate(); err != nil {
-		return diag.Diagnostics{
-			diag.Diagnostic{
-				Severity:      diag.Error,
-				Summary:       "Invalid disk_interface value.",
-				Detail:        err.Error(),
-				AttributePath: path,
-			},
-		}
-	}
-	return nil
 }
 
 func (p *provider) diskAttachmentResource() *schema.Resource {
