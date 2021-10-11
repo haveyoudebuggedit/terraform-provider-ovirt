@@ -72,13 +72,8 @@ resource "ovirt_disk_attachments" "test" {
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestMatchResourceAttr(
 							"ovirt_disk_attachments.test",
-							"attachment.0.id",
-							regexp.MustCompile("^.+$"),
-						),
-						resource.TestMatchResourceAttr(
-							"ovirt_disk_attachments.test",
-							"attachment.1.id",
-							regexp.MustCompile("^.+$"),
+							"attachment.#",
+							regexp.MustCompile("^2$"),
 						),
 					),
 				},
@@ -125,11 +120,6 @@ resource "ovirt_disk_attachments" "test" {
 						templateID,
 					),
 					Check: resource.ComposeTestCheckFunc(
-						resource.TestMatchResourceAttr(
-							"ovirt_disk_attachments.test",
-							"attachment.0.id",
-							regexp.MustCompile("^.+$"),
-						),
 						resource.TestMatchResourceAttr(
 							"ovirt_disk_attachments.test",
 							"attachment.#",
@@ -220,14 +210,9 @@ resource "ovirt_disk_attachments" "test" {
 							regexp.MustCompile("^.+$"),
 						),
 						resource.TestMatchResourceAttr(
-							"ovirt_disk_attachments.test.0",
-							"disk_id",
-							regexp.MustCompile("^.+$"),
-						),
-						resource.TestMatchResourceAttr(
-							"ovirt_disk_attachments.test.0",
-							"disk_interface",
-							regexp.MustCompile("^.+$"),
+							"ovirt_disk_attachments.test",
+							"attachment.#",
+							regexp.MustCompile("^1$"),
 						),
 						resource.TestMatchResourceAttr(
 							"ovirt_disk_attachments.test",
