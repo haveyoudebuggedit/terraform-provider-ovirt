@@ -15,6 +15,8 @@ jobs:
           fetch-depth: 0
           ref: main
       - name: Auto-backport changes to v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
           git checkout v1
