@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - v1
 jobs:
   backport:
     name: Auto-backport
@@ -16,6 +17,7 @@ jobs:
         run: |
           set -ex
           git checkout main
+          git log v1..main
           for COMMITID in $(git log --left-right --graph --cherry-pick --oneline v1..main -- | awk ' { print $2 } '); do
             if [ "$(git branch --list backport/${COMMITID} | wc -l)" -eq 0 ]; then
               TITLE=$(git log --format=%B -n 1 6e0b91426aaaaf681023a7fc2088729676dd6b0b | head -n 1)
@@ -26,7 +28,7 @@ jobs:
               git checkout -b backport/${COMMITID}
               git cherry-pick ${COMMITID}
               git push -u origin backport/${COMMITID}
-              gh pr create --title "Backport: ${TITLE}" --base v1 --head backport/${COMMITID}
+              gh pr create --title "Backport: ${TITLE}" --body "This is an automatically created PR. Please do not update the branches manually." --base v1 --head backport/${COMMITID}
             else
               echo "Backport for ${COMMITID} already exists, skipping..."
             fi
