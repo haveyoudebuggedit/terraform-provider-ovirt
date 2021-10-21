@@ -19,7 +19,7 @@ jobs:
           set -euxo pipefail
           git checkout main
           git log --left-right --graph --cherry-pick --oneline origin/v1..main -- | awk ' { print $2 } ' >/tmp/git.log
-          for COMMITID in $(cat /tmp/git.log | tail -n 1); do
+          for COMMITID in $(tac /tmp/git.log); do
             if [ "$(git branch --list backport/${COMMITID} | wc -l)" -eq 0 ]; then
               TITLE=$(git log --format=%B -n 1 6e0b91426aaaaf681023a7fc2088729676dd6b0b | head -n 1)
               echo "Creating backport PR for ${COMMITID}: ${TITLE}..."
@@ -27,7 +27,7 @@ jobs:
               git config user.email noreply@github.com
               git checkout v1
               git checkout -b backport/${COMMITID}
-              git cherry-pick ${COMMITID}
+              git rebase ${COMMITID}
               git push -u origin backport/${COMMITID}
               gh pr create --title "Backport: ${TITLE}" --body "This is an automatically created PR. Please do not update the branches manually." --base v1 --head backport/${COMMITID}
             else
