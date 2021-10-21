@@ -13,7 +13,7 @@ jobs:
           fetch-depth: 0
       - name: Auto-backport changes to main
         run: |
-          set -e
+          set -ex
           git checkout main
           for COMMITID in $(git log --left-right --graph --cherry-pick --oneline v1..main | awk ' { print $2 } '); do
             if [ "$(git branch --list backport/${COMMITID} | wc -l)" -eq 0 ]; then
