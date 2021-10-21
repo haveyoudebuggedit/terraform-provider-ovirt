@@ -1,6 +1,6 @@
 # Experimental Terraform provider for oVirt
 
-This is an ⚠️ experiemental ⚠️ Terraform provider. With this we aim to reimplement the [original Terraform provider](https://github.com/ovirt/terraform-provider-ovirt) on the basis of [go-ovirt-client](https://github.com/ovirt/go-ovirt-client).
+This is an ⚠️ experiemental ⚠️ Terraform provider. It will soon be merged into the [original Terraform provider](https://github.com/ovirt/terraform-provider-ovirt) and is written on the basis of [go-ovirt-client](https://github.com/ovirt/go-ovirt-client).
 
 This brings several advantages:
 
