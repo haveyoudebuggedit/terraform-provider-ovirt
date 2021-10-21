@@ -73,11 +73,21 @@ func validateTLSSystem(value interface{}, path cty.Path) diag.Diagnostics {
 		}
 	}
 
-	if v && runtime.GOOS == "windows" {
+	if v {
+		if runtime.GOOS == "windows" {
+			return diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					Summary:       "The tls_ca_system option not available on Windows.",
+					Detail:        "The tls_ca_system option is not available on Windows due to Golang bug 16736.",
+					AttributePath: path,
+				},
+			}
+		}
 		return diag.Diagnostics{
 			{
-				Severity:      diag.Error,
-				Summary:       "The tls_ca_system option not available on Windows.",
+				Severity:      diag.Warning,
+				Summary:       "You are using the tls_ca_system option. Your Terraform code will not work on Windows.",
 				Detail:        "The tls_ca_system option is not available on Windows due to Golang bug 16736.",
 				AttributePath: path,
 			},

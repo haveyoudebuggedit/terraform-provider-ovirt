@@ -40,18 +40,18 @@ var providerSchema = map[string]*schema.Schema{
 		Type:             schema.TypeBool,
 		Optional:         true,
 		ValidateDiagFunc: validateTLSInsecure,
-		Description:      "Disable certificate verification when connecting the Engine. This is not recommended. Setting this option is incompatible with other tls_ options.",
+		Description:      "Disable certificate verification when connecting the Engine. This is not recommended. Setting this option is incompatible with other `tls_` options.",
 	},
 	"tls_system": {
 		Type:             schema.TypeBool,
 		Optional:         true,
 		ValidateDiagFunc: validateTLSSystem,
-		Description:      "Use the system certificate pool to verify the Engine certificate. This does not work on Windows. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
+		Description:      "Use the system certificate pool to verify the Engine certificate. This does not work on Windows. Can be used in parallel with other `tls_` options, one tls_ option is required when mock = false.",
 	},
 	"tls_ca_bundle": {
 		Type:        schema.TypeString,
 		Optional:    true,
-		Description: "Validate the Engine certificate against the provided CA certificates. The certificate chain passed should be in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.",
+		Description: "Validate the Engine certificate against the provided CA certificates. The certificate chain passed should be in PEM format. Can be used in parallel with other `tls_` options, one `tls_` option is required when mock = false.",
 	},
 	"tls_ca_files": {
 		Type:        schema.TypeList,
