@@ -5,7 +5,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin"
 	"github.com/haveyoudebuggedit/terraform-provider-ovirt/ovirt"
 )
 
