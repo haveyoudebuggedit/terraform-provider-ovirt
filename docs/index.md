@@ -19,7 +19,7 @@ The oVirt provider interacts with the oVirt Engine / RHV Manager API. The provid
 
 ```terraform
 provider "ovirt" {
-  # Set this to your oVirt Engine URL, e.g. https://example.com/ovirt-engine/
+  # Set this to your oVirt Engine URL, e.g. https://example.com/ovirt-engine/api/
   url           = var.url
   # Set this to your oVirt username, e.g. admin@internal
   username      = var.username
@@ -58,5 +58,5 @@ provider "ovirt" {
 - **tls_ca_files** (List of String) Validate the Engine certificate against the CA certificates provided in the files in this parameter. The files should contain certificates in PEM format. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.
 - **tls_insecure** (Boolean) Disable certificate verification when connecting the Engine. This is not recommended. Setting this option is incompatible with other tls_ options.
 - **tls_system** (Boolean) Use the system certificate pool to verify the Engine certificate. This does not work on Windows. Can be used in parallel with other tls_ options, one tls_ option is required when mock = false.
-- **url** (String) URL for the oVirt engine. Required when mock = false.
-- **username** (String) Username and realm for oVirt authentication. Required when mock = false.
+- **url** (String) URL for the oVirt engine API. Required when mock = false. Example: `https://example.com/ovirt-engine/api/`
+- **username** (String) Username and realm for oVirt authentication. Required when mock = false. Example: `admin@internal`
