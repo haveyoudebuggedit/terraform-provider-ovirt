@@ -12,7 +12,7 @@ import (
 
 func extractString(data *schema.ResourceData, option string, diags diag.Diagnostics) (string, diag.Diagnostics) {
 	var url string
-	urlInterface, ok := data.GetOk("url")
+	urlInterface, ok := data.GetOk(option)
 	if !ok {
 		diags = append(
 			diags, diag.Diagnostic{

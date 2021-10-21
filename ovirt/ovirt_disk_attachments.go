@@ -15,9 +15,6 @@ var diskAttachmentsSchema = map[string]*schema.Schema{
 		Type:     schema.TypeSet,
 		Required: true,
 		ForceNew: false,
-		Set: func(data interface{}) int {
-			return schema.HashString(data.(map[string]interface{})["disk_id"])
-		},
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"id": {
@@ -51,11 +48,19 @@ var diskAttachmentsSchema = map[string]*schema.Schema{
 		ForceNew:     true,
 		ValidateFunc: validateCompat(validateUUID),
 	},
+	"detach_unmanaged": {
+		Type:          schema.TypeBool,
+		Optional:      true,
+		Default:       false,
+		ConflictsWith: []string{"remove_unmanaged"},
+		Description:   `Detach unmanaged disks from the VM. This is useful for detaching disks that have been inherited from the template or added manually. The detached disks will not be removed and can be used. To remove the disks instead, use ` + "`remove_unmanaged`.",
+	},
 	"remove_unmanaged": {
-		Type:     schema.TypeBool,
-		Optional: true,
-		Default:  false,
-		Description: `Completely remove attached unmanaged disks, not just detach.
+		Type:          schema.TypeBool,
+		Optional:      true,
+		Default:       false,
+		ConflictsWith: []string{"detach_unmanaged"},
+		Description: `Completely remove attached disks that are not listed in this resources. This is useful for removing disks that have been inherited from the template or added manually.
 
 ~> Use with care! This option will delete all disks attached to the current VM that are not managed, not just detach them!`,
 	},
@@ -85,6 +90,7 @@ func (p *provider) diskAttachmentsCreateOrUpdate(
 ) diag.Diagnostics {
 	vmID := data.Get("vm_id").(string)
 	desiredAttachments := data.Get("attachment").(*schema.Set)
+	detachUnmanaged := data.Get("detach_unmanaged").(bool)
 	removeUnmanaged := data.Get("remove_unmanaged").(bool)
 	retry := ovirtclient.ContextStrategy(ctx)
 
@@ -94,17 +100,6 @@ func (p *provider) diskAttachmentsCreateOrUpdate(
 	}
 
 	diags := diag.Diagnostics{}
-	if removeUnmanaged {
-		diags = append(
-			diags, p.cleanUnmanagedDiskAttachments(
-				existingAttachments,
-				desiredAttachments,
-				removeUnmanaged,
-				retry,
-			)...,
-		)
-	}
-
 	for _, desiredAttachmentInterface := range desiredAttachments.List() {
 		desiredAttachment := desiredAttachmentInterface.(map[string]interface{})
 		diags = append(
@@ -116,6 +111,10 @@ func (p *provider) diskAttachmentsCreateOrUpdate(
 			)...,
 		)
 	}
+
+	if detachUnmanaged || removeUnmanaged {
+		diags = p.cleanUnmanagedDiskAttachments(removeUnmanaged, existingAttachments, desiredAttachments, retry, diags)
+	}
 	data.SetId(vmID)
 	if err := data.Set("attachment", desiredAttachments); err != nil {
 		diags = append(diags, errorToDiag("set attachment in Terraform", err))
@@ -124,85 +123,89 @@ func (p *provider) diskAttachmentsCreateOrUpdate(
 }
 
 func (p *provider) cleanUnmanagedDiskAttachments(
+	removeUnmanaged bool,
 	existingAttachments []ovirtclient.DiskAttachment,
 	desiredAttachments *schema.Set,
-	removeUnmanaged bool,
 	retry ovirtclient.RetryStrategy,
+	diags diag.Diagnostics,
 ) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	for _, existingAttachment := range existingAttachments {
-		diags = append(
-			diags, p.cleanUnmanagedDiskAttachment(
-				desiredAttachments,
-				existingAttachment,
-				removeUnmanaged,
-				retry,
-			)...,
-		)
+	for _, attachment := range existingAttachments {
+		found := false
+		for _, desiredAttachmentInterface := range desiredAttachments.List() {
+			desiredAttachment := desiredAttachmentInterface.(map[string]interface{})
+			if desiredAttachment["id"] == attachment.ID() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if err := attachment.Remove(retry); err != nil {
+				diags = append(
+					diags,
+					errorToDiag(
+						fmt.Sprintf("remove disk attachmend %s", attachment.ID()),
+						err,
+					),
+				)
+			} else if removeUnmanaged {
+				if err := p.client.RemoveDisk(attachment.DiskID(), retry); err != nil {
+					diags = append(
+						diags,
+						errorToDiag(
+							fmt.Sprintf("remove disk %s, please remove manually", attachment.DiskID()),
+							err,
+						),
+					)
+				}
+			}
+		}
 	}
 	return diags
 }
 
-func (p *provider) cleanUnmanagedDiskAttachment(
-	desiredAttachments *schema.Set,
-	existingAttachment ovirtclient.DiskAttachment,
-	removeUnmanaged bool,
-	retry ovirtclient.RetryStrategy,
-) diag.Diagnostics {
-	for _, desiredAttachmentInterface := range desiredAttachments.List() {
-		desiredAttachment := desiredAttachmentInterface.(map[string]interface{})
-		// We identify by disk ID only since the type will be changed later.
-		if desiredAttachment["disk_id"].(string) == existingAttachment.DiskID() {
-			return nil
-		}
-	}
-	switch {
-	case removeUnmanaged:
-		disk, err := existingAttachment.Disk(retry)
-		if err != nil {
-			return errorToDiags(fmt.Sprintf("get disk for existing disk attachment %s", existingAttachment.ID()), err)
-		}
-		if err := disk.Remove(retry); err != nil {
-			return errorToDiags(fmt.Sprintf("remove disk for disk attachment %s", existingAttachment.ID()), err)
-		}
-	default:
-		if err := existingAttachment.Remove(retry); err != nil {
-			return errorToDiags(fmt.Sprintf("remove existing disk attachment %s", existingAttachment.ID()), err)
-		}
-	}
-	return nil
-}
-
+// createOrUpdateDiskAttachment creates or updates a single disk attachment. If the ID is set it will attempt to find
+// the attachment. If none is found, or the ID is not set, it will create the attachment. If the disk interface type
+// is mismatched, the attachment will be recreated with the correct type.
 func (p *provider) createOrUpdateDiskAttachment(
 	existingAttachments []ovirtclient.DiskAttachment,
 	desiredAttachment map[string]interface{},
 	vmID string,
 	retry ovirtclient.RetryStrategy,
 ) diag.Diagnostics {
+	id := desiredAttachment["id"].(string)
 	diskID := desiredAttachment["disk_id"].(string)
 	diskInterfaceName := desiredAttachment["disk_interface"].(string)
 
 	var foundExisting ovirtclient.DiskAttachment
-	for _, existingAttachment := range existingAttachments {
-		if existingAttachment.DiskID() == diskID {
-			foundExisting = existingAttachment
-			break
+	if id != "" {
+		// The attachment is known in the Terraform state, let's try and find it.
+		for _, existingAttachment := range existingAttachments {
+			if existingAttachment.ID() == id {
+				foundExisting = existingAttachment
+				break
+			}
 		}
 	}
 	if foundExisting != nil {
-		if string(foundExisting.DiskInterface()) == diskInterfaceName {
-			// Attachment exists and has correct type.
-			desiredAttachment["id"] = foundExisting.ID()
+		// If we found an existing attachment, check if all parameters match. Otherwise, remove the attachment
+		// and let it be re-created below.
+		if foundExisting.DiskID() == diskID && string(foundExisting.DiskInterface()) == diskInterfaceName {
 			return nil
 		}
-		// Attachment exists, but has incorrect type. Remove the attachment
-		if err := foundExisting.Remove(retry); err != nil {
+		if err := foundExisting.Remove(retry); err != nil && !isNotFound(err) {
 			return errorToDiags(
 				fmt.Sprintf("remove existing disk interface %s", foundExisting.ID()),
 				err,
 			)
 		}
+		// Set the state to be empty. If the API call below fails, Terraform knows it will need to re-create the
+		// attachment.
+		desiredAttachment["id"] = ""
+		desiredAttachment["disk_id"] = ""
+		desiredAttachment["disk_interface"] = ""
 	}
+
+	// Create or re-create disk attachment, then set it in the Terraform state.
 	attachment, err := p.client.CreateDiskAttachment(
 		vmID,
 		diskID,
@@ -217,6 +220,8 @@ func (p *provider) createOrUpdateDiskAttachment(
 		)
 	}
 	desiredAttachment["id"] = attachment.ID()
+	desiredAttachment["disk_id"] = attachment.DiskID()
+	desiredAttachment["disk_interface"] = string(attachment.DiskInterface())
 	return nil
 }
 
@@ -231,15 +236,17 @@ func (p *provider) diskAttachmentsRead(
 		return errorToDiags(fmt.Sprintf("listing disk attachments of VM %s", vmID), err)
 	}
 
+	// Go over the list of attachments and try to link them up. If not all attachments are found, Terraform will try to
+	// create the missing attachments.
 	attachments := data.Get("attachment").(*schema.Set)
 	for _, attachmentInterface := range attachments.List() {
 		attachment := attachmentInterface.(map[string]interface{})
 		attachments.Remove(attachment)
 		found := false
 		for _, diskAttachment := range diskAttachments {
-			if attachment["disk_id"] == diskAttachment.DiskID() {
+			if attachment["id"] == diskAttachment.ID() {
 				found = true
-				attachment["id"] = diskAttachment.ID()
+				attachment["disk_id"] = diskAttachment.DiskID()
 				attachment["disk_interface"] = string(diskAttachment.DiskInterface())
 			}
 		}
@@ -247,23 +254,26 @@ func (p *provider) diskAttachmentsRead(
 			attachments.Add(attachment)
 		}
 	}
+
+	// Go over the existing attachments. If any unmanaged attachments are found, detach_unmanaged and remove_unmanaged
+	// are explicitly set to false. This will cause Terraform to run the update again and try to detach/remove the disk
+	// again.
 	for _, diskAttachment := range diskAttachments {
 		found := false
 		for _, attachmentInterface := range attachments.List() {
 			attachment := attachmentInterface.(map[string]interface{})
-			if attachment["disk_id"] == diskAttachment.DiskID() {
+			if attachment["id"] == diskAttachment.ID() {
 				found = true
 				break
 			}
 		}
 		if !found {
-			attachments.Add(
-				map[string]interface{}{
-					"id":             diskAttachment.ID(),
-					"disk_id":        diskAttachment.DiskID(),
-					"disk_interface": string(diskAttachment.DiskInterface()),
-				},
-			)
+			if err := data.Set("detach_unmanaged", false); err != nil {
+				return errorToDiags("setting detach_unmanaged", err)
+			}
+			if err := data.Set("remove_unmanaged", false); err != nil {
+				return errorToDiags("setting remove_unmanaged", err)
+			}
 		}
 	}
 	return nil
@@ -307,13 +317,18 @@ func (p *provider) diskAttachmentsImport(
 	data *schema.ResourceData,
 	i interface{},
 ) ([]*schema.ResourceData, error) {
-	id := data.Id()
-	if err := data.Set("vm_id", id); err != nil {
+	vmID := data.Id()
+	if err := data.Set("vm_id", vmID); err != nil {
 		return nil, err
 	}
-	if diags := p.diskAttachmentsCreateOrUpdate(ctx, data, i); diags.HasError() {
-		return nil, diagsToError(diags)
+
+	diags := p.diskAttachmentsRead(ctx, data, i)
+	if diags.HasError() {
+		return []*schema.ResourceData{
+			data,
+		}, diagsToError(diags)
 	}
+
 	return []*schema.ResourceData{
 		data,
 	}, nil
