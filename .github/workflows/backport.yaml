@@ -18,9 +18,8 @@ jobs:
         run: |
           set -euxo pipefail
           git checkout main
-          git log origin/v1..main
           git log --left-right --graph --cherry-pick --oneline origin/v1..main -- | awk ' { print $2 } ' >/tmp/git.log
-          for COMMITID in $(tail -r /tmp/git.log); do
+          for COMMITID in $(cat /tmp/git.log | tail -n 1); do
             if [ "$(git branch --list backport/${COMMITID} | wc -l)" -eq 0 ]; then
               TITLE=$(git log --format=%B -n 1 6e0b91426aaaaf681023a7fc2088729676dd6b0b | head -n 1)
               echo "Creating backport PR for ${COMMITID}: ${TITLE}..."
