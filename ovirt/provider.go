@@ -17,7 +17,7 @@ var providerSchema = map[string]*schema.Schema{
 	"username": {
 		Type:        schema.TypeString,
 		Optional:    true,
-		Description: "Username and realm for oVirt authentication. Required when mock = false.",
+		Description: "Username and realm for oVirt authentication. Required when mock = false. Example: `admin@internal`",
 	},
 	"password": {
 		Type:        schema.TypeString,
@@ -28,7 +28,7 @@ var providerSchema = map[string]*schema.Schema{
 	"url": {
 		Type:        schema.TypeString,
 		Optional:    true,
-		Description: "URL for the oVirt engine. Required when mock = false.",
+		Description: "URL for the oVirt engine API. Required when mock = false. Example: `https://example.com/ovirt-engine/api/`",
 	},
 	"extra_headers": {
 		Type:        schema.TypeMap,

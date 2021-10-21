@@ -55,7 +55,8 @@ resource "ovirt_disk_attachments" "test" {
 
 ### Optional
 
-- **remove_unmanaged** (Boolean) Completely remove attached unmanaged disks, not just detach.
+- **detach_unmanaged** (Boolean) Detach unmanaged disks from the VM. This is useful for detaching disks that have been inherited from the template or added manually. The detached disks will not be removed and can be used. To remove the disks instead, use `remove_unmanaged`.
+- **remove_unmanaged** (Boolean) Completely remove attached disks that are not listed in this resources. This is useful for removing disks that have been inherited from the template or added manually.
 
 ~> Use with care! This option will delete all disks attached to the current VM that are not managed, not just detach them!
 

@@ -1,5 +1,5 @@
 provider "ovirt" {
-  # Set this to your oVirt Engine URL, e.g. https://example.com/ovirt-engine/
+  # Set this to your oVirt Engine URL, e.g. https://example.com/ovirt-engine/api/
   url           = var.url
   # Set this to your oVirt username, e.g. admin@internal
   username      = var.username
