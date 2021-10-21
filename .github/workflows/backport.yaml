@@ -23,7 +23,7 @@ jobs:
           git checkout main
           for COMMITID in $(git cherry v1 | grep '+' | awk '{print $2}'); do
             if [ "$(git branch --list backport/${COMMITID} | wc -l)" -eq 0 ]; then
-              TITLE=$(git log --format=%B -n 1 6e0b91426aaaaf681023a7fc2088729676dd6b0b | head -n 1)
+              TITLE=$(git log --format=%B -n 1 ${COMMITID} | head -n 1)
               echo "Creating backport PR for ${COMMITID}: ${TITLE}..."
               git config user.name "GitHub Actions"
               git config user.email noreply@github.com
