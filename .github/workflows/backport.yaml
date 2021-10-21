@@ -22,7 +22,7 @@ jobs:
           git checkout v1
           git checkout main
           for COMMITID in $(git cherry v1 | grep '+' | awk '{print $2}'); do
-            PRID=$(gh pr list | grep backport/${COMMITID} | awk '{print $1}' | sed -e 's/#//')
+            PRID=$(gh pr list -s open -B v1 -H backport/${COMMITID} | grep '#' | awk '{print $1}' | sed -e 's/#//')
             if [ -z "${PRID}" ]; then
               TITLE=$(git log --format=%B -n 1 ${COMMITID} | head -n 1)
               echo "Creating backport PR for ${COMMITID}: ${TITLE}..."
