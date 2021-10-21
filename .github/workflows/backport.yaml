@@ -31,7 +31,9 @@ jobs:
               git checkout -b backport/${COMMITID}
               git cherry-pick ${COMMITID}
               git push --force -u origin backport/${COMMITID}
-              gh pr create --title "Backport: ${TITLE}" --body "This is an automatically created PR. Please do not update the branches manually." --base v1 --head backport/${COMMITID}
+              gh pr create --title "Backport: ${TITLE}" --body "This is an automatically created PR to backport the change in the title to the v1 branch. You can add a review to automatically merge this change. Please do not update this branch by hand, your changes may be lost." --base v1 --head backport/${COMMITID}
+              PRID=$(gh pr list | grep backport/${COMMITID} | awk '{print $1}' | sed -e 's/#//')
+              gh pr merge --auto "${PRID}" -s
             else
               echo "Backport for ${COMMITID} already exists, skipping..."
             fi
