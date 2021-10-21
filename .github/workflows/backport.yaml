@@ -16,10 +16,11 @@ jobs:
           ref: main
       - name: Auto-backport changes to v1
         run: |
-          set -ex
+          set -euxo pipefail
           git checkout main
           git log origin/v1..main
-          for COMMITID in $(git log --left-right --graph --cherry-pick --oneline origin/v1..main -- | awk ' { print $2 } '); do
+          git log --left-right --graph --cherry-pick --oneline origin/v1..main -- | awk ' { print $2 } ' >/tmp/git.log
+          for COMMITID in $(tail -r /tmp/git.log); do
             if [ "$(git branch --list backport/${COMMITID} | wc -l)" -eq 0 ]; then
               TITLE=$(git log --format=%B -n 1 6e0b91426aaaaf681023a7fc2088729676dd6b0b | head -n 1)
               echo "Creating backport PR for ${COMMITID}: ${TITLE}..."
