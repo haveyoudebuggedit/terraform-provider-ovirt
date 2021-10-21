@@ -1,4 +1,4 @@
-name: Build
+name: Backport
 on:
   push:
     branches:
@@ -11,9 +11,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Backport
+      - name: Auto-backport changes to main
         run: |
           set -e
+          git checkout main
           for COMMITID in $(git log --left-right --graph --cherry-pick --oneline v1..main | awk ' { print $2 } '); do
             if [ "$(git branch --list backport/${COMMITID} | wc -l)" -eq 0 ]; then
               TITLE=$(git log --format=%B -n 1 6e0b91426aaaaf681023a7fc2088729676dd6b0b | head -n 1)
