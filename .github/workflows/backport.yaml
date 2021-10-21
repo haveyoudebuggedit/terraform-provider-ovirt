@@ -1,0 +1,31 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+jobs:
+  backport:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Backport
+        run: |
+          set -e
+          for COMMITID in $(git log --left-right --graph --cherry-pick --oneline v1..main | awk ' { print $2 } '); do
+            if [ "$(git branch --list backport/${COMMITID} | wc -l)" -eq 0 ]; then
+              TITLE=$(git log --format=%B -n 1 6e0b91426aaaaf681023a7fc2088729676dd6b0b | head -n 1)
+              echo "Creating backport PR for ${COMMITID}: ${TITLE}..."
+              git config user.name "GitHub Actions"
+              git config user.email noreply@github.com
+              git checkout v1
+              git checkout -b backport/${COMMITID}
+              git cherry-pick ${COMMITID}
+              git push -u origin backport/${COMMITID}
+              gh pr create --title "Backport: ${TITLE}" --base v1 --head backport/${COMMITID}
+            else
+              echo "Backport for ${COMMITID} already exists, skipping..."
+            fi
+          done
