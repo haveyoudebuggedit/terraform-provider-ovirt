@@ -52,7 +52,7 @@ func (p *provider) nicCreate(ctx context.Context, data *schema.ResourceData, _ i
 	vnicProfileID := data.Get("vnic_profile_id").(string)
 	name := data.Get("name").(string)
 
-	nic, err := p.client.CreateNIC(vmID, name, vnicProfileID, nil, ovirtclient.ContextStrategy(ctx))
+	nic, err := p.client.CreateNIC(vmID, vnicProfileID, name, nil, ovirtclient.ContextStrategy(ctx))
 	if err != nil {
 		return errorToDiags("create NIC", err)
 	}
